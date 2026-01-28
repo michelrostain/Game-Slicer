@@ -27,7 +27,7 @@ class Fruit:
         # Vitesse horizontale (un peu vers la gauche ou la droite)
         self.speed_x = random.uniform(-10, 10) 
         # Vitesse verticale (impulsion vers le haut, donc négative)
-        self.speed_y = random.uniform(-40, -14) 
+        self.speed_y = random.uniform(-20, -10) 
         self.color="white"
         
         self.gravity = 0.4
