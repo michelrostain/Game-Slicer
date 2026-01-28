@@ -1,5 +1,6 @@
 import pygame,random
 from constantes import liste_fruits, images, load_assets
+import controller
 from objets import Fruit
 
 
@@ -30,15 +31,20 @@ compteur=0
 
 while running : 
     for event in pygame.event.get():
+        
         if event.type == pygame.QUIT:
             running=False
 
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            controller.handle_mouse_inputs(mes_fruits, pygame.mouse.get_pos())
+        
         if event.type == pygame.KEYDOWN :
             # Si on  presse r, la fenêtre devient réglable
             if event.key == pygame.K_r:
                 screen=pygame.display.set_mode((1280, 720), pygame.RESIZABLE)
             if event.key == pygame.K_f:
                 screen=pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+            controller.handle_keyboard_inputs(mes_fruits, screen.get_width(), screen.get_height(), event.key)
 
     compteur+=1
     if compteur >= frequence_lancer:
