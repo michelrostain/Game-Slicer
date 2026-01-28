@@ -8,8 +8,20 @@ from objets import Fruit
 # Initialise toutes les biblipthèques de Pygame, ainsi que le son
 pygame.init()
 
+L_ecran=1280
+H_ecran=720
+
 # Variable screen qui devient la fenêtre principale du jeu
-screen=pygame.display.set_mode((1280, 720), pygame.RESIZABLE)
+screen=pygame.display.set_mode((L_ecran, H_ecran), pygame.RESIZABLE)
+
+# Taille écran par joueur
+largeur_joueur=L_ecran //2 
+
+rect_gauche=pygame.Rect(0, 0, largeur_joueur, H_ecran)
+rect_droite=pygame(largeur_joueur, 0, largeur_joueur, H_ecran)
+
+ecran_gauche=screen.subsurface(rect_gauche)
+ecran_droite=screen.sbsurface(rect_droite)
 
 # Objet horloge qui permet de gérer le nombre d'image par seconde du jeu
 clock=pygame.time.Clock()
