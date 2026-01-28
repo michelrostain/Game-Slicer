@@ -35,8 +35,11 @@ while running :
         if event.type == pygame.QUIT:
             running=False
 
+        # Souris : slicing par traînée
         if event.type == pygame.MOUSEBUTTONDOWN:
-            controller.handle_mouse_inputs(mes_fruits, pygame.mouse.get_pos())
+            controller.start_slice(pygame.mouse.get_pos())
+        if event.type == pygame.MOUSEBUTTONUP:
+            controller.end_slice(mes_fruits)
         
         if event.type == pygame.KEYDOWN :
             # Si on  presse r, la fenêtre devient réglable
@@ -44,8 +47,13 @@ while running :
                 screen=pygame.display.set_mode((1280, 720), pygame.RESIZABLE)
             if event.key == pygame.K_f:
                 screen=pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+            # Gestion du slicing par zones clavier
             controller.handle_keyboard_inputs(mes_fruits, screen.get_width(), screen.get_height(), event.key)
 
+    # Mise à jour de la traînée si on slice (une fois par frame)
+    if controller.slicing:
+        controller.update_slice(pygame.mouse.get_pos())
+    
     compteur+=1
     if compteur >= frequence_lancer:
         fruit_choisi = random.choice(liste_fruits)
@@ -56,14 +64,18 @@ while running :
 
     screen.fill("purple")
 
+    # Une seule boucle pour dessiner la traînée
     for f in mes_fruits:
         f.update(screen.get_width())  # Mise à jour du déplacement en fonction des frames
         f.draw(screen)
 
-    mes_fruits=[f for f in mes_fruits if f.y<screen.get_height()+100 ]
+    # Dessine la trainée par-dessus des fruits
+    controller.draw_slice(screen)
+    
+    # Nettoyage des fruits hors écran (en bas)
+    mes_fruits=[f for f in mes_fruits if f.y < screen.get_height() + 100 ]
 
     pygame.display.flip()
-
 
     clock.tick(60)
 
