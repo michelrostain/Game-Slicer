@@ -19,10 +19,10 @@ screen=pygame.display.set_mode((L_ecran, H_ecran), pygame.RESIZABLE)
 largeur_joueur=L_ecran //2 
 
 rect_gauche=pygame.Rect(0, 0, largeur_joueur, H_ecran)
-rect_droite=pygame(largeur_joueur, 0, largeur_joueur, H_ecran)
+rect_droite=pygame.Rect(largeur_joueur, 0, largeur_joueur, H_ecran)
 
 ecran_gauche=screen.subsurface(rect_gauche)
-ecran_droite=screen.sbsurface(rect_droite)
+ecran_droite=screen.subsurface(rect_droite)
 
 # Objet horloge qui permet de gérer le nombre d'image par seconde du jeu
 clock=pygame.time.Clock()
