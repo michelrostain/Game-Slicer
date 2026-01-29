@@ -18,25 +18,30 @@ screen=pygame.display.set_mode((L_ecran, H_ecran), pygame.RESIZABLE)
 # Taille écran par joueur
 largeur_joueur=L_ecran //2 
 
+# CREATION DES DEUX ECRANS
+#################################
 rect_gauche=pygame.Rect(0, 0, largeur_joueur, H_ecran)
 rect_droite=pygame.Rect(largeur_joueur, 0, largeur_joueur, H_ecran)
 
 ecran_gauche=screen.subsurface(rect_gauche)
 ecran_droite=screen.subsurface(rect_droite)
+#################################
+
 
 # Objet horloge qui permet de gérer le nombre d'image par seconde du jeu
 clock=pygame.time.Clock()
 
 # Variable pour définir quand le jeu est actif
 running=True
-################################
+
 load_assets()
 lancement_fruit=True
 
 fruit_choisi=random.choice(liste_fruits)
 # Gestionnaire d'existence des fruits crées et envoyés, pour un apparition simultanée de plusieurs fruits
 mes_fruits = [] 
-
+fruits_j1=[]
+fruits_j2=[]
 
 frequence_lancer = random.randint(20, 60)
 compteur=0
@@ -60,17 +65,31 @@ while running :
 
     compteur+=1
     if compteur >= frequence_lancer:
-        fruit_choisi = random.choice(liste_fruits)
-        mes_fruits.append(Fruit(fruit_choisi, screen.get_width(), screen.get_height()))
+        # Lancement fruits pour le joueur1
+        fruit_choisi_1 = random.choice(liste_fruits)
+        nouveau_f1=(Fruit(fruit_choisi_1, ecran_gauche.get_width(), ecran_gauche.get_height()))
+        fruits_j1.append(nouveau_f1)
+
+        # Lancement fruits pour le joueur2
+        fruit_choisi_2 = random.choice(liste_fruits)
+        nouveau_f2=(Fruit(fruit_choisi_2, ecran_droite.get_width(), ecran_droite.get_height()))
+        fruits_j2.append(nouveau_f2)
+
         compteur=0
         # Apparition des fruits plus naturelle
         frequence_lancer = random.randint(30, 100)
 
-    screen.fill("purple")
+    ecran_gauche.fill("purple")
+    ecran_droite.fill("blue")
 
-    for f in mes_fruits:
-        f.update(screen.get_width())  # Mise à jour du déplacement en fonction des frames
-        f.draw(screen)
+    for f in fruits_j1:
+        f.update(ecran_gauche.get_width())  # Mise à jour du déplacement en fonction des frames pour le joueur1
+        f.draw(ecran_gauche)
+
+    for f in fruits_j2:
+        f.update(ecran_droite.get_width())  # Mise à jour du déplacement en fonction des frames pour le joueur2
+        f.draw(ecran_droite)
+
 
     mes_fruits=[f for f in mes_fruits if f.y<screen.get_height()+100 ]
 
