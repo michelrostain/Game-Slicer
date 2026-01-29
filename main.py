@@ -13,22 +13,20 @@ pygame.init()
 screen=pygame.display.set_mode((1280, 720), pygame.RESIZABLE)
 
 # Objet horloge qui permet de gérer le nombre d'image par seconde du jeu
-clock=pygame.time.Clock()
+clock = pygame.time.Clock()
 
 # Variable pour définir quand le jeu est actif
 running=True
 ################################
 load_assets()
-lancement_fruit=True
 
-fruit_choisi=random.choice(liste_fruits)
+# Variables de jeu
 # Gestionnaire d'existence des fruits crées et envoyés, pour un apparition simultanée de plusieurs fruits
 mes_fruits = [] 
-
-
-frequence_lancer = random.randint(20, 60)
+frequence_lancer = random.randint(30, 100)
 compteur=0
 
+# Boucle principale du jeu
 while running : 
     for event in pygame.event.get():
         
@@ -38,8 +36,9 @@ while running :
         # Souris : slicing par traînée
         if event.type == pygame.MOUSEBUTTONDOWN:
             controller.start_slice(pygame.mouse.get_pos())
+            
         if event.type == pygame.MOUSEBUTTONUP:
-            controller.end_slice(mes_fruits)
+            controller.end_slice(mes_fruits, screen.get_width())
         
         if event.type == pygame.KEYDOWN :
             # Si on  presse r, la fenêtre devient réglable
@@ -54,17 +53,37 @@ while running :
     if controller.slicing:
         controller.update_slice(pygame.mouse.get_pos())
     
+    # Génération de nouveaux fruits
     compteur+=1
     if compteur >= frequence_lancer:
-        fruit_choisi = random.choice(liste_fruits)
-        mes_fruits.append(Fruit(fruit_choisi, screen.get_width(), screen.get_height()))
+        zone_joueur = random.choice([1,2])
+        mes_fruits.append(Fruit(zone_joueur, screen.get_width(), screen.get_height(), zone_joueur))
         compteur=0
         # Apparition des fruits plus naturelle
         frequence_lancer = random.randint(30, 100)
 
+    # Affichage
     screen.fill("purple")
 
-    # Une seule boucle pour dessiner la traînée
+    # ============================================
+    # DIVISION DE L'ÉCRAN EN 2 (MODE 2 JOUEURS)
+    # ============================================
+    largeur_ecran = screen.get_width()
+    hauteur_ecran = screen.get_height()
+    milieu_x = largeur_ecran // 2
+    
+    # Ligne verticale au milieu pour séparer les 2 zones
+    pygame.draw.line(screen, (255, 255, 255), (milieu_x, 0), (milieu_x, hauteur_ecran), 3)
+    
+    # Texte pour indiquer les zones des joueurs
+    font = pygame.font.Font(None, 36)
+    texte_j1 = font.render("JOUEUR 1 (Clavier)", True, (255, 255, 255))
+    texte_j2 = font.render("JOUEUR 2 (Souris)", True, (255, 255, 255))
+    screen.blit(texte_j1, (milieu_x // 2 - texte_j1.get_width() // 2, 20))
+    screen.blit(texte_j2, (milieu_x + milieu_x // 2 - texte_j2.get_width() // 2, 20))
+    # ============================================
+
+    # Mise à jour et affichage des fruits
     for f in mes_fruits:
         f.update(screen.get_width())  # Mise à jour du déplacement en fonction des frames
         f.draw(screen)
@@ -76,7 +95,6 @@ while running :
     mes_fruits=[f for f in mes_fruits if f.y < screen.get_height() + 100 ]
 
     pygame.display.flip()
-
     clock.tick(60)
 
 pygame.quit()
