@@ -9,15 +9,33 @@ from objets import Fruit
 # Initialise toutes les biblipthèques de Pygame, ainsi que le son
 pygame.init()
 
-# Variable screen qui devient la fenêtre principale du jeu
-screen=pygame.display.set_mode((1280, 720), pygame.RESIZABLE)
+L_ecran=1280
+H_ecran=720
+
+# Variable screen qui devient la fenêtre principale du jeu pour un seul joueur
+screen=pygame.display.set_mode((L_ecran, H_ecran), pygame.RESIZABLE)
+
+# Taille écran par joueur
+largeur_joueur=L_ecran //2 
+
+# CREATION DES DEUX ECRANS
+#################################
+rect_gauche=pygame.Rect(0, 0, largeur_joueur, H_ecran)
+rect_droite=pygame.Rect(largeur_joueur, 0, largeur_joueur, H_ecran)
+
+ecran_gauche=screen.subsurface(rect_gauche)
+ecran_droite=screen.subsurface(rect_droite)
+#################################
+
+# Variable d'état pour le nombre de joueurs
+nombre_de_joueurs=2
 
 # Objet horloge qui permet de gérer le nombre d'image par seconde du jeu
 clock = pygame.time.Clock()
 
 # Variable pour définir quand le jeu est actif
 running=True
-################################
+
 load_assets()
 
 # Variables de jeu
@@ -32,6 +50,18 @@ while running :
         
         if event.type == pygame.QUIT:
             running=False
+
+        # Test pour le basculement entre les modes 1 et 2 joueurs
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_1:
+                nombre_de_joueurs = 1
+                fruits_j1 = [] # On vide pour éviter les bugs visuels au changement
+                fruits_j2 = []
+            if event.key == pygame.K_2:
+                nombre_de_joueurs = 2
+                fruits_j1 = []
+                fruits_j2 = []
+
 
         # Souris : slicing par traînée
         if event.type == pygame.MOUSEBUTTONDOWN:
