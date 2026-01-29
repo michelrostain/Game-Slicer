@@ -49,11 +49,6 @@ frequence_lancer = random.randint(30, 100)
 compteur = 0
 running = True
 
-# EFFET GLAÇON
-freeze_timer_j1 = 0 # Temps restant de gel pour J1 (ou tout l'écran en solo)
-freeze_timer_j2 = 0 # Temps restant de gel pour J2
-DUREE_GEL = 180     # 180 frames = 3 secondes (si 60 FPS)
-
 # --- BOUCLE PRINCIPALE ---
 while running: 
     
