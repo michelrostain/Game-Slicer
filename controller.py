@@ -21,7 +21,7 @@ def update_slice(mouse_pos):
     if slicing:
         slice_points.append(mouse_pos)
 
-def end_slice(mes_fruits, screen_width=None):
+def end_slice(mes_fruits, screen_width=None, nb_joueurs=1):
     """
     Termine le slicing et vérifie les collisions avec les fruits
     ZONE JOUEUR 2 : Ne slice QUE les fruits dans la moitié DROITE de l'écran
@@ -42,6 +42,11 @@ def end_slice(mes_fruits, screen_width=None):
         # Vérifie les collisions avec la ligne tracée
         sliced_fruits = []
         for fruit in mes_fruits:
+            condition_zone = (nb_joueurs == 1) or (fruit.x >= milieu_x)
+            if condition_zone:
+                if line_intersects_fruit(slice_points, fruit):
+                    sliced_fruits.append(fruit)
+
             # ==========================================
             # RESTRICTION ZONE JOUEUR 2 (MOITIÉ DROITE)
             # ==========================================
@@ -122,7 +127,7 @@ def draw_slice(surface):
     if len(slice_points) > 1:
         pygame.draw.lines(surface, (255, 0, 0), False, slice_points, 5)
 
-def handle_keyboard_inputs(mes_fruits, screen_width, screen_height, key):
+def handle_keyboard_inputs(mes_fruits, screen_width, screen_height, key, nb_joueurs=1):
     """
     Gestion du slicing par zones clavier (ZSDE)
     ZONE JOUEUR 1 : Fonctionne UNIQUEMENT sur la moitié GAUCHE de l'écran
@@ -133,31 +138,32 @@ def handle_keyboard_inputs(mes_fruits, screen_width, screen_height, key):
     D : Bas-droite (de la moitié gauche)
     E : Haut-droite (de la moitié gauche)
     """
+
+    limite_x_clavier = (screen_width // 2) if nb_joueurs == 2 else screen_width
+
     # ==========================================
     # CALCUL DU MILIEU DE L'ÉCRAN
     # ==========================================
-    milieu_x = screen_width // 2
-    
+    mid_zone_x = limite_x_clavier // 2
+    mid_y = screen_height // 2    
     # ==========================================
     # ZONES LIMITÉES À LA MOITIÉ GAUCHE
     # ==========================================
     zones = {
-        pygame.K_z: (0, 0, milieu_x // 2, screen_height // 2),                     # Haut-gauche (quart supérieur gauche)
-        pygame.K_s: (0, screen_height // 2, milieu_x // 2, screen_height),         # Bas-gauche (quart inférieur gauche)
-        pygame.K_d: (milieu_x // 2, screen_height // 2, milieu_x, screen_height),  # Bas-droite de la zone gauche
-        pygame.K_e: (milieu_x // 2, 0, milieu_x, screen_height // 2)               # Haut-droite de la zone gauche
+        pygame.K_z: (0, 0, mid_zone_x, mid_y),                     # Haut-Gauche
+        pygame.K_s: (0, mid_y, mid_zone_x, screen_height),         # Bas-Gauche
+        pygame.K_d: (mid_zone_x, mid_y, limite_x_clavier, screen_height), # Bas-Droite
+        pygame.K_e: (mid_zone_x, 0, limite_x_clavier, mid_y)       # Haut-Droite
     }
     
     if key in zones:
         zone = zones[key]
         sliced = 0
-        for fruit in mes_fruits[:]:  # Copie pour éviter erreurs lors de suppression
-            # ==========================================
-            # VÉRIFICATION : Fruit dans la zone spécifiée ET dans la moitié GAUCHE
-            # ==========================================
+        for fruit in mes_fruits[:]:
+            # Vérifie si le fruit est dans le rectangle défini
             if zone[0] <= fruit.x <= zone[2] and zone[1] <= fruit.y <= zone[3]:
-                # Double vérification : le fruit est bien dans la moitié gauche
-                if fruit.x < milieu_x:
+                # En mode 2 joueurs, on s'assure qu'on ne touche pas aux fruits du voisin (droite)
+                if nb_joueurs == 1 or fruit.x < (screen_width // 2):
                     mes_fruits.remove(fruit)
                     sliced += 1
         
