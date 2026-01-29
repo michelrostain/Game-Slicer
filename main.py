@@ -49,6 +49,15 @@ frequence_lancer = random.randint(30, 100)
 compteur = 0
 running = True
 
+# Gestion du son
+try:
+    # Un seul fichier qui contient "3... 2... 1... GO!"
+    son_decompte = pygame.mixer.Sound("Assets/Sounds/decompte_complet.wav")
+    son_decompte.set_volume(0.6)
+except (pygame.error, FileNotFoundError):
+    print("Son manquant, création d'un son vide.")
+    son_decompte = pygame.mixer.Sound(buffer=bytearray())
+
 # --- BOUCLE PRINCIPALE ---
 while running: 
     
@@ -85,6 +94,9 @@ while running:
                 # Réinitialisation
                 vies_j1 = 3 
                 start_ticks = pygame.time.get_ticks() 
+
+                son_decompte.stop() # Coupe le son s'il jouait déjà
+                son_decompte.play()
                 
             if bouton_2j.est_clique(event):
                 nombre_de_joueurs = 2
@@ -94,6 +106,9 @@ while running:
                 vies_j1 = 3
                 vies_j2 = 3
                 start_ticks = pygame.time.get_ticks()
+
+                son_decompte.stop() # Coupe le son s'il jouait déjà
+                son_decompte.play()
 
             if bouton_regles.est_clique(event): etat_jeu = "regles"
             if bouton_scores.est_clique(event): etat_jeu = "scores"
@@ -110,6 +125,7 @@ while running:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 etat_jeu = "menu"
                 mes_fruits = [] 
+                son_decompte.stop()
 
             seconds_ecoules = (pygame.time.get_ticks() - start_ticks) / 1000
             
