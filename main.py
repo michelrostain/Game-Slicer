@@ -2,7 +2,6 @@ import pygame, random
 from constantes import liste_fruits, images, load_assets
 import controller
 from objets import Fruit
-# Importation de notre nouveau fichier interface
 from interface import Bouton, dessiner_regles, dessiner_scores
 
 # INITIALISATION
@@ -10,40 +9,39 @@ pygame.init()
 L_ecran = 1280
 H_ecran = 720
 screen = pygame.display.set_mode((L_ecran, H_ecran), pygame.RESIZABLE)
-pygame.display.set_caption("Fruit Slicer - Menu")
+pygame.display.set_caption("Fruit Slicer")
 clock = pygame.time.Clock()
 load_assets()
 
-# --- CHARGEMENT DES FONDS D'ÉCRAN ---
+# --- CHARGEMENT DES FONDS ---
 try:
     fond_joueur1_de_2 = pygame.image.load("Assets/Images/Backgrounds/Background1.png").convert()
     fond_joueur1 = pygame.image.load('Assets/Images/Backgrounds/Background2.png').convert()
     fond_joueur2 = pygame.image.load("Assets/Images/Backgrounds/Background3.png").convert()
-    print("✓ Images de fond chargées avec succès")
-except pygame.error as e:
-    print(f"✗ Erreur chargement fond d'écran : {e}")
-    fond_joueur1_de_2 = pygame.Surface((100, 100))
-    fond_joueur1_de_2.fill((100, 50, 50)) 
-    fond_joueur1 = pygame.Surface((100, 100))
-    fond_joueur1.fill((50, 50, 100)) 
-    fond_joueur2 = pygame.Surface((100, 100))
-    fond_joueur2.fill((50, 50, 100)) 
+except pygame.error:
+    # Fonds de secours
+    fond_joueur1_de_2 = pygame.Surface((100, 100)); fond_joueur1_de_2.fill((100, 50, 50)) 
+    fond_joueur1 = pygame.Surface((100, 100)); fond_joueur1.fill((50, 50, 100)) 
+    fond_joueur2 = pygame.Surface((100, 100)); fond_joueur2.fill((50, 50, 100)) 
 
 # --- ETAT DU JEU ---
 etat_jeu = "menu" 
 nombre_de_joueurs = 1
 start_ticks = 0 
 
-# --- CRÉATION DES BOUTONS DU MENU (Initialisation) ---
-# On les crée une première fois, mais leurs positions seront mises à jour dans la boucle
+# NOUVEAU : Vies séparées
+vies_j1 = 3
+vies_j2 = 3
+
+# --- BOUTONS ---
 cx = L_ecran // 2
 bouton_1j = Bouton(cx - 150, 150, 300, 60, "1 Joueur", (0, 100, 0), (0, 150, 0))
 bouton_2j = Bouton(cx - 150, 230, 300, 60, "2 Joueurs", (0, 0, 100), (0, 0, 150))
 bouton_regles = Bouton(cx - 150, 310, 300, 60, "Comment jouer", (100, 100, 0), (150, 150, 0))
 bouton_scores = Bouton(cx - 150, 390, 300, 60, "Scores", (100, 0, 100), (150, 0, 150))
 bouton_quitter = Bouton(cx - 150, 550, 300, 60, "Quitter", (100, 0, 0), (150, 0, 0))
-
 bouton_retour = Bouton(20, 20, 150, 50, "Retour", (50, 50, 50), (100, 100, 100))
+bouton_menu_go = Bouton(0, 0, 300, 60, "Menu Principal", (100, 100, 100), (150, 150, 150))
 
 # Variables de jeu
 mes_fruits = [] 
@@ -51,24 +49,25 @@ frequence_lancer = random.randint(30, 100)
 compteur = 0
 running = True
 
+# EFFET GLAÇON
+freeze_timer_j1 = 0 # Temps restant de gel pour J1 (ou tout l'écran en solo)
+freeze_timer_j2 = 0 # Temps restant de gel pour J2
+DUREE_GEL = 180     # 180 frames = 3 secondes (si 60 FPS)
+
 # --- BOUCLE PRINCIPALE ---
 while running: 
     
-    # ===============================================================
-    # 0. RE-CENTRAGE DYNAMIQUE (POUR LE PLEIN ÉCRAN)
-    # ===============================================================
-    # On calcule le centre actuel de la fenêtre
+    # 0. RE-CENTRAGE DYNAMIQUE
     largeur_actuelle = screen.get_width()
     centre_x = largeur_actuelle // 2
     
-    # On met à jour la position X (rectangle) des boutons pour les centrer
-    # On suppose que vos boutons ont un attribut 'rect' (standard Pygame)
     bouton_1j.rect.centerx = centre_x
     bouton_2j.rect.centerx = centre_x
     bouton_regles.rect.centerx = centre_x
     bouton_scores.rect.centerx = centre_x
     bouton_quitter.rect.centerx = centre_x
-    # ===============================================================
+    bouton_menu_go.rect.centerx = centre_x
+    bouton_menu_go.rect.y = screen.get_height() // 2 + 120
 
     # 1. GESTION DES ÉVÉNEMENTS
     events = pygame.event.get()
@@ -76,50 +75,49 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         
-        # Gestion du basculement Plein Écran avec F11 ou F
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_f or event.key == pygame.K_F11:
-                # Bascule entre plein écran et fenêtré
                 if screen.get_flags() & pygame.FULLSCREEN:
                     screen = pygame.display.set_mode((1280, 720), pygame.RESIZABLE)
                 else:
                     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 
-        # --- ÉVÉNEMENTS DU MENU ---
         if etat_jeu == "menu":
             if bouton_1j.est_clique(event):
                 nombre_de_joueurs = 1
                 etat_jeu = "jeu"
-                mes_fruits = [] 
+                mes_fruits = []
+                # Réinitialisation
+                vies_j1 = 3 
                 start_ticks = pygame.time.get_ticks() 
                 
             if bouton_2j.est_clique(event):
                 nombre_de_joueurs = 2
                 etat_jeu = "jeu"
                 mes_fruits = []
+                # Réinitialisation des DEUX joueurs
+                vies_j1 = 3
+                vies_j2 = 3
                 start_ticks = pygame.time.get_ticks()
 
-            if bouton_regles.est_clique(event):
-                etat_jeu = "regles"
-            if bouton_scores.est_clique(event):
-                etat_jeu = "scores"
-            if bouton_quitter.est_clique(event):
-                running = False
+            if bouton_regles.est_clique(event): etat_jeu = "regles"
+            if bouton_scores.est_clique(event): etat_jeu = "scores"
+            if bouton_quitter.est_clique(event): running = False
 
         elif etat_jeu in ["regles", "scores"]:
-            if bouton_retour.est_clique(event):
+            if bouton_retour.est_clique(event): etat_jeu = "menu"
+        
+        elif etat_jeu == "game_over":
+            if bouton_menu_go.est_clique(event):
                 etat_jeu = "menu"
 
-        # --- ÉVÉNEMENTS DU JEU ---
         elif etat_jeu == "jeu":
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 etat_jeu = "menu"
                 mes_fruits = [] 
 
-            # Calcul du temps écoulé
             seconds_ecoules = (pygame.time.get_ticks() - start_ticks) / 1000
             
-            # Inputs seulement si le décompte est fini
             if seconds_ecoules > 3:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     controller.start_slice(pygame.mouse.get_pos())
@@ -128,16 +126,13 @@ while running:
                 if event.type == pygame.KEYDOWN:
                     controller.handle_keyboard_inputs(mes_fruits, screen.get_width(), screen.get_height(), event.key, nombre_de_joueurs)
 
-    # 2. LOGIQUE ET DESSIN SELON L'ÉTAT
+    # 2. LOGIQUE ET DESSIN
     
     if etat_jeu == "menu":
         screen.fill((30, 30, 40))
         font_titre = pygame.font.Font(None, 80)
         titre = font_titre.render("FRUIT SLICER", True, (255, 100, 100))
-        
-        # Le titre aussi doit être centré dynamiquement
         screen.blit(titre, (screen.get_width()//2 - titre.get_width()//2, 50))
-        
         bouton_1j.dessiner(screen)
         bouton_2j.dessiner(screen)
         bouton_regles.dessiner(screen)
@@ -152,17 +147,59 @@ while running:
         dessiner_scores(screen)
         bouton_retour.dessiner(screen)
 
+    # --- ÉCRAN GAME OVER (LOGIQUE MODIFIÉE) ---
+    elif etat_jeu == "game_over":
+        screen.fill((20, 0, 0)) # Fond rouge sombre général
+        
+        milieu_x = screen.get_width() // 2
+        
+        # Ligne de séparation pour garder la cohérence visuelle
+        if nombre_de_joueurs == 2:
+            pygame.draw.line(screen, (100, 0, 0), (milieu_x, 0), (milieu_x, screen.get_height()), 2)
+
+        font_go = pygame.font.Font(None, 80)
+        font_raison = pygame.font.Font(None, 40)
+        
+        txt_go = font_go.render("GAME OVER", True, (255, 0, 0))
+        txt_perdu = font_raison.render("Vous avez perdu !", True, (200, 200, 200))
+        txt_gagne = font_go.render("VAINQUEUR !", True, (0, 255, 0))
+
+        if nombre_de_joueurs == 1:
+            # Affichage classique centré
+            screen.blit(txt_go, (screen.get_width()//2 - txt_go.get_width()//2, screen.get_height()//2 - 100))
+        else:
+            # --- LOGIQUE GAME OVER 2 JOUEURS ---
+            
+            # Affichage pour le Joueur 1 (Gauche)
+            if vies_j1 <= 0:
+                # J1 a perdu
+                screen.blit(txt_go, (milieu_x//2 - txt_go.get_width()//2, screen.get_height()//2 - 100))
+                screen.blit(txt_perdu, (milieu_x//2 - txt_perdu.get_width()//2, screen.get_height()//2 - 20))
+            else:
+                # J1 a gagné (car le jeu s'arrête si l'un perd)
+                screen.blit(txt_gagne, (milieu_x//2 - txt_gagne.get_width()//2, screen.get_height()//2 - 100))
+
+            # Affichage pour le Joueur 2 (Droite)
+            if vies_j2 <= 0:
+                # J2 a perdu
+                screen.blit(txt_go, (milieu_x + milieu_x//2 - txt_go.get_width()//2, screen.get_height()//2 - 100))
+                screen.blit(txt_perdu, (milieu_x + milieu_x//2 - txt_perdu.get_width()//2, screen.get_height()//2 - 20))
+            else:
+                # J2 a gagné
+                screen.blit(txt_gagne, (milieu_x + milieu_x//2 - txt_gagne.get_width()//2, screen.get_height()//2 - 100))
+
+        bouton_menu_go.dessiner(screen)
+
+    # --- ÉCRAN DE JEU ---
     elif etat_jeu == "jeu":
         
         seconds_ecoules = (pygame.time.get_ticks() - start_ticks) / 1000
         en_attente = seconds_ecoules < 3  
 
-        # --- LOGIQUE DU JEU ---
+        # --- LOGIQUE ---
         if not en_attente:
-            if not en_attente:
-                if controller.slicing:
-                    # On passe maintenant mes_fruits pour vérifier la coupe en temps réel
-                    controller.update_slice(pygame.mouse.get_pos(), mes_fruits, screen.get_width(), nombre_de_joueurs)
+            if controller.slicing:
+                controller.update_slice(pygame.mouse.get_pos(), mes_fruits, screen.get_width(), nombre_de_joueurs)
             
             compteur += 1
             if compteur >= frequence_lancer:
@@ -176,7 +213,7 @@ while running:
                 compteur = 0
                 frequence_lancer = random.randint(30, 100)
 
-        # --- AFFICHAGE (FONDS + TEXTES INFORMATIFS) ---
+        # --- AFFICHAGE FONDS ---
         largeur_ecran = screen.get_width()
         hauteur_ecran = screen.get_height()
         milieu_x = largeur_ecran // 2
@@ -185,34 +222,70 @@ while running:
         if nombre_de_joueurs == 1:
             bg_scaled = pygame.transform.scale(fond_joueur1, (largeur_ecran, hauteur_ecran))
             screen.blit(bg_scaled, (0, 0))
-            
             txt_info = font_info.render("Clavier ou Souris", True, (255, 255, 255))
             screen.blit(txt_info, (largeur_ecran//2 - txt_info.get_width()//2, 20))
-
         else:
             bg_left = pygame.transform.scale(fond_joueur1_de_2, (milieu_x, hauteur_ecran))
             screen.blit(bg_left, (0, 0))
             bg_right = pygame.transform.scale(fond_joueur2, (milieu_x, hauteur_ecran))
             screen.blit(bg_right, (milieu_x, 0))
-            
             pygame.draw.line(screen, (255, 255, 255), (milieu_x, 0), (milieu_x, hauteur_ecran), 3)
-            
             t1 = font_info.render("J1 (Clavier)", True, (255, 255, 255))
             t2 = font_info.render("J2 (Souris)", True, (255, 255, 255))
             screen.blit(t1, (milieu_x//2 - t1.get_width()//2, 20))
             screen.blit(t2, (milieu_x + milieu_x//2 - t2.get_width()//2, 20))
 
-        # Affichage des fruits
-        for f in mes_fruits:
+        # --- GESTION FRUITS ET VIES SÉPARÉES ---
+        for f in mes_fruits[:]:
             if not en_attente:
                 f.update(screen.get_width())
             f.draw(screen)
 
+            # --- DÉTECTION FRUIT RATÉ ---
+            if f.y > screen.get_height() + 50: 
+                mes_fruits.remove(f)
+                
+                if not en_attente:
+                    if nombre_de_joueurs == 1:
+                        # Mode 1 joueur : on utilise vies_j1 par défaut
+                        vies_j1 -= 1
+                        if vies_j1 <= 0:
+                            etat_jeu = "game_over"
+                    else:
+                        # Mode 2 joueurs : on regarde le côté
+                        if f.x < milieu_x:
+                            # C'est un fruit de GAUCHE (Joueur 1)
+                            vies_j1 -= 1
+                            print(f"J1 a raté ! Vies restantes : {vies_j1}")
+                        else:
+                            # C'est un fruit de DROITE (Joueur 2)
+                            vies_j2 -= 1
+                            print(f"J2 a raté ! Vies restantes : {vies_j2}")
+                        
+                        # Si l'un des deux meurt, c'est Game Over global
+                        if vies_j1 <= 0 or vies_j2 <= 0:
+                            etat_jeu = "game_over"
+
         if not en_attente:
             controller.draw_slice(screen)
-            mes_fruits = [f for f in mes_fruits if f.y < screen.get_height() + 100]
 
-        # --- AFFICHAGE DU DÉCOMPTE ---
+        # --- AFFICHAGE DES VIES (HUD) ---
+        font_vies = pygame.font.Font(None, 50)
+        
+        if nombre_de_joueurs == 1:
+            txt_vies = font_vies.render(f"VIES : {vies_j1}", True, (255, 0, 0))
+            screen.blit(txt_vies, (largeur_ecran // 2 - txt_vies.get_width() // 2, 70))
+        else:
+            # Vies J1 (Gauche)
+            txt_vies_j1 = font_vies.render(f"VIES : {vies_j1}", True, (255, 0, 0))
+            screen.blit(txt_vies_j1, (milieu_x // 2 - txt_vies_j1.get_width() // 2, 70))
+            
+            # Vies J2 (Droite)
+            txt_vies_j2 = font_vies.render(f"VIES : {vies_j2}", True, (255, 0, 0))
+            screen.blit(txt_vies_j2, (milieu_x + milieu_x // 2 - txt_vies_j2.get_width() // 2, 70))
+
+
+        # --- DÉCOMPTE DÉBUT DE JEU ---
         if en_attente:
             chiffre = int(4 - seconds_ecoules)
             font_phrase = pygame.font.Font(None, 45)
@@ -229,7 +302,6 @@ while running:
             else:
                 rect_phrase_j1 = surf_phrase.get_rect(center=(milieu_x//2, hauteur_ecran//2 - 60))
                 rect_chrono_j1 = surf_chrono.get_rect(center=(milieu_x//2, hauteur_ecran//2 + 40))
-                
                 rect_phrase_j2 = surf_phrase.get_rect(center=(milieu_x + milieu_x//2, hauteur_ecran//2 - 60))
                 rect_chrono_j2 = surf_chrono.get_rect(center=(milieu_x + milieu_x//2, hauteur_ecran//2 + 40))
                 
