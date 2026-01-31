@@ -1,6 +1,6 @@
 import pygame
 import math
-from objets import Glacon
+from objets import Glacon, Bombe
 
 # Variables pour le slicing à la souris
 slicing = False
@@ -55,6 +55,9 @@ def update_slice(mouse_pos, mes_fruits, screen_width, nombre_de_joueurs=1):
                     if isinstance(fruit, Glacon) or fruit.type == "glacon":
                         mes_fruits.remove(fruit) # Le glaçon disparait
                         return "freeze"
+                    if isinstance(fruit, Bombe) or fruit.type == "bombe":
+                        mes_fruits.remove(fruit) # La bombe disparait
+                        return "game_over"
                     
                     # SI C'EST UNE POIRE (ou fruit à états)
                     elif fruit.images_set:
@@ -82,6 +85,7 @@ def handle_keyboard_inputs(mes_fruits, screen_width, screen_height, key, nombre_
     Gestion du Joueur 1 (Clavier)
     """
     milieu_x = screen_width // 2
+    bonus_active = None
     
     # Définition des 4 zones du joueur 1 (Gauche)
     # Format: (x_min, y_min, x_max, y_max)
@@ -99,9 +103,14 @@ def handle_keyboard_inputs(mes_fruits, screen_width, screen_height, key, nombre_
             # Le fruit est-il dans la zone activée par la touche ?
             if zone[0] <= fruit.x <= zone[2] and zone[1] <= fruit.y <= zone[3]:
                 # Sécurité : on vérifie qu'il est bien dans la moitié gauche globale
-                if isinstance(fruit, Glacon) or fruit.type == "glacon":
-                         mes_fruits.remove(fruit)
-                         bonus_active = "freeze"
+                if isinstance(fruit, Bombe) or fruit.type == "bombe":
+                    mes_fruits.remove(fruit)
+                    print("[J1 CLAVIER] Bombe tranchée ! GAME OVER !")
+                    bonus_active = "game_over"
+                elif isinstance(fruit, Glacon) or fruit.type == "glacon":
+                    mes_fruits.remove(fruit)
+                    print("[J1 CLAVIER] Glaçon tranché ! Temps gelé !")
+                    bonus_active = "freeze"
                     
                 elif fruit.images_set:
                     fruit.couper()
@@ -113,6 +122,7 @@ def handle_keyboard_inputs(mes_fruits, screen_width, screen_height, key, nombre_
         
         if sliced > 0:
             print(f"[J1 CLAVIER] {sliced} fruit(s) slicé(s) !")
+    return bonus_active
 
 def draw_slice(screen):
     """Dessine la traînée visuelle"""
