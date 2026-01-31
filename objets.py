@@ -3,13 +3,13 @@ from constantes import images
 
 # Classe pour représenter un fruit dans le jeu
 class Fruit:
-    def __init__(self, type_de_fruit, largeur, hauteur, zone_joueur=None):
+    def __init__(self, type_de_fruit, largeur, hauteur, zone_joueur=None, gravity=0.4):
         # Initialisation du type de fruit (ex: "pomme", "banane", etc.)
         self.type = type_de_fruit
         # Indicateur si le fruit a été tranché
         self.sliced = False
         # Rayon du fruit pour les collisions et l'affichage
-        self.radius = 45  # Légèrement réduit pour mieux coller aux fruits fins
+        self.radius = 60  # Légèrement réduit pour mieux coller aux fruits fins
         
         # Stockage de la zone du joueur (1 pour gauche, 2 pour droite, None pour mode 1 joueur)
         self.zone_joueur = zone_joueur
@@ -18,27 +18,67 @@ class Fruit:
         # Récupération de l'image brute depuis les constantes
         raw_image = images.get(self.type)
         # Dictionnaire pour stocker les variantes d'image (pour les poires avec états)
-        self.images_set = None 
+        self.images_set = None
         
-        # Hauteur cible pour tous les fruits (en pixels) pour uniformité
-        HAUTEUR_CIBLE = 110 
+        # Gravité appliquée au fruit
+        self.gravity = gravity
 
         if isinstance(raw_image, dict):
             # Cas d'un fruit avec plusieurs états (ex: poire avec "up", "down", "cut")
             self.images_set = {}
-            for key, img_orig in raw_image.items():
-                # 1. Calcul du ratio largeur/hauteur pour conserver les proportions
-                ratio = img_orig.get_width() / img_orig.get_height()
-                # 2. Calcul de la nouvelle largeur basée sur la hauteur cible
-                nouvelle_largeur = int(HAUTEUR_CIBLE * ratio)
-                # 3. Redimensionnement avec smoothscale pour une meilleure qualité
-                self.images_set[key] = pygame.transform.smoothscale(img_orig, (nouvelle_largeur, HAUTEUR_CIBLE))
+            
+            # STRATÉGIE : On utilise l'image "cut" pour déterminer la taille cible
+            # Toutes les images auront la même LARGEUR que "cut" après redimensionnement
+            
+            HAUTEUR_CIBLE = 160  # Hauteur fixe pour l'affichage
+            
+            # 1. On redimensionne d'abord l'image "cut" avec la hauteur cible
+            if "cut" in raw_image:
+                img_cut = raw_image["cut"]
+                ratio_cut = img_cut.get_width() / img_cut.get_height()
+                largeur_cut = int(HAUTEUR_CIBLE * ratio_cut)
+                self.images_set["cut"] = pygame.transform.smoothscale(
+                    img_cut, 
+                    (largeur_cut, HAUTEUR_CIBLE)
+                )
+                
+                # 2. On redimensionne "up" et "down" pour avoir la MÊME LARGEUR que "cut"
+                for key in ["up", "down"]:
+                    if key in raw_image:
+                        img_orig = raw_image[key]
+                        # On force la même largeur que "cut", en calculant la hauteur proportionnelle
+                        ratio_orig = img_orig.get_width() / img_orig.get_height()
+                        hauteur_proportionnelle = int(largeur_cut / ratio_orig)
+                        
+                        # Si la hauteur calculée dépasse HAUTEUR_CIBLE, on ajuste
+                        if hauteur_proportionnelle > HAUTEUR_CIBLE:
+                            # On garde HAUTEUR_CIBLE et on recalcule la largeur
+                            self.images_set[key] = pygame.transform.smoothscale(
+                                img_orig,
+                                (int(HAUTEUR_CIBLE * ratio_orig), HAUTEUR_CIBLE)
+                            )
+                        else:
+                            # On utilise la largeur de "cut"
+                            self.images_set[key] = pygame.transform.smoothscale(
+                                img_orig,
+                                (largeur_cut, hauteur_proportionnelle)
+                            )
+            else:
+                # Fallback si pas d'image "cut"
+                for key, img_orig in raw_image.items():
+                    ratio = img_orig.get_width() / img_orig.get_height()
+                    nouvelle_largeur = int(HAUTEUR_CIBLE * ratio)
+                    self.images_set[key] = pygame.transform.smoothscale(
+                        img_orig, 
+                        (nouvelle_largeur, HAUTEUR_CIBLE)
+                    )
             
             # Image initiale : état "up" (fruit montant)
             self.image = self.images_set["up"]
 
         elif raw_image is not None:
             # Cas d'un fruit simple (sans états multiples)
+            HAUTEUR_CIBLE = 160
             # Calcul du ratio pour conserver les proportions
             ratio = raw_image.get_width() / raw_image.get_height()
             nouvelle_largeur = int(HAUTEUR_CIBLE * ratio)
@@ -67,7 +107,7 @@ class Fruit:
         self.speed_x = random.uniform(-10, 10)  # Vitesse horizontale
         self.speed_y = random.uniform(-20, -10)  # Vitesse verticale (vers le haut au départ)
         # Gravité pour simuler la chute
-        self.gravity = 0.4
+        self.gravity = gravity
         
         # Couleur de secours si pas d'image (pour debug)
         self.color = (255, 0, 0)
@@ -134,7 +174,7 @@ class Fruit:
             pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
 
 class Glacon:
-    def __init__(self, largeur, hauteur):
+    def __init__(self, largeur, hauteur, gravity=0.4):
         self.type = "glacon"
         self.sliced = False
         self.images_set = None
@@ -146,7 +186,7 @@ class Glacon:
         self.y = hauteur
         self.speed_x = random.uniform(-8, 8)
         self.speed_y = random.uniform(-18, -12)
-        self.gravity = 0.4
+        self.gravity = gravity
     
     def update(self, largeur_ecran, speed_factor=1):
         """Met à jour le glaçon"""

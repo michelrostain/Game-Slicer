@@ -53,17 +53,20 @@ def update_slice(mouse_pos, mes_fruits, screen_width, nombre_de_joueurs=1):
                     
                     # DÉTECTION DU TYPE
                     if isinstance(fruit, Glacon) or fruit.type == "glacon":
-                         mes_fruits.remove(fruit) # Le glaçon disparait
-                         return "freeze"
+                        mes_fruits.remove(fruit) # Le glaçon disparait
+                        return "freeze"
                     
                     # SI C'EST UNE POIRE (ou fruit à états)
                     elif fruit.images_set:
                         fruit.couper() # On change l'image, MAIS on ne remove pas
                         # Le fruit va continuer de tomber avec l'image "cut"
+                        # On retourne 1 pour incrémenter le score
+                        return 1 
                     
                     # SI C'EST UN FRUIT NORMAL (Pomme standard)
                     else:
                         mes_fruits.remove(fruit) # On supprime direct
+                        return 1  # On retourne 1 pour incrémenter le score
 def end_slice(mes_fruits, screen_width=None, nombre_de_joueurs=1):
     """
     Termine le slicing.
