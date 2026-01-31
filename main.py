@@ -48,6 +48,9 @@ mes_fruits = []
 frequence_lancer = random.randint(30, 100)
 compteur = 0
 running = True
+niveau = 1
+score = 0
+gravite_actuelle = 0.4
 
 # Gestion du son
 try:
@@ -94,6 +97,11 @@ while running:
                 # Réinitialisation
                 vies_j1 = 3 
                 start_ticks = pygame.time.get_ticks() 
+                
+                # Reset des variables de niveau pour un nouveau jeu
+                niveau = 1
+                score = 0
+                gravite_actuelle = 0.4 
 
                 son_decompte.stop() # Coupe le son s'il jouait déjà
                 son_decompte.play()
@@ -210,14 +218,34 @@ while running:
         # --- LOGIQUE ---
         if not en_attente:
             if controller.slicing:
-                controller.update_slice(pygame.mouse.get_pos(), mes_fruits, screen.get_width(), nombre_de_joueurs)
+                result = controller.update_slice(pygame.mouse.get_pos(), mes_fruits, screen.get_width(), nombre_de_joueurs)
+                if result == 1 and nombre_de_joueurs == 1:
+                    score += 1
+                    # Gestion de la montée de niveau tous les 10 points
+                    if score > 0 and score % 10 == 0:
+                        niveau += 1
+                        # Augmentation de la gravité
+                        gravite_actuelle = (min(0.4 + (niveau - 1) * 0.03, 1.0))
+                elif result == "freeze" and nombre_de_joueurs == 1:
+                    # Activer l'effet de freeze à partir du niveau 3
+                    if niveau >= 3:
+                        vies_j1 -= 1
+                        if vies_j1 <= 0:
+                            etat_jeu = "game_over"
             
             compteur += 1
+            # Ajustement de la fréquence en fonction du niveau (uniquement en mode 1 joueur)
+            if nombre_de_joueurs == 1:
+                min_freq = max(20, 50 - (niveau - 1) * 2)  # Fréquence minimale diminue avec le niveau
+                max_freq = max(40, 150 - (niveau - 1) * 3)  # Maximale aussi
+            else:
+                min_freq = 30  # Valeurs par défaut pour mode 2 joueurs
+                max_freq = 100
             if compteur >= frequence_lancer:
-                # 1 chance sur 10 de faire apparaître un Glaçon
+                # 1 chance sur 10 de faire apparaître un Glaçon (dans les deux modes)
                 if random.randint(1, 10) == 1:
                     # On crée un glaçon
-                    mes_fruits.append(Glacon(screen.get_width(), screen.get_height()))
+                    mes_fruits.append(Glacon(screen.get_width(), screen.get_height(), gravite_actuelle if nombre_de_joueurs == 1 else 0.4))
                 else:
                     # Sinon, on crée un fruit normal (Code d'avant)
                     type_fruit = random.choice(liste_fruits)
@@ -226,9 +254,11 @@ while running:
                     else:
                         zone_joueur = None
                     
-                    mes_fruits.append(Fruit(type_fruit, screen.get_width(), screen.get_height(), zone_joueur))
+                    # Passer la gravité actuelle uniquement si mode 1 joueur, sinon défaut
+                    gravite_pour_fruit = gravite_actuelle if nombre_de_joueurs == 1 else 0.4
+                    mes_fruits.append(Fruit(type_fruit, screen.get_width(), screen.get_height(), zone_joueur, gravite_pour_fruit))
                 compteur = 0
-                frequence_lancer = random.randint(30, 100)
+                frequence_lancer = random.randint(min_freq, max_freq)
 
         # --- AFFICHAGE FONDS ---
         largeur_ecran = screen.get_width()
@@ -292,6 +322,8 @@ while running:
         if nombre_de_joueurs == 1:
             txt_vies = font_vies.render(f"VIES : {vies_j1}", True, (255, 0, 0))
             screen.blit(txt_vies, (largeur_ecran // 2 - txt_vies.get_width() // 2, 70))
+            txt_niveau = font_vies.render(f"NIVEAU : {niveau}", True, (255, 255, 0))
+            screen.blit(txt_niveau, (largeur_ecran // 2 - txt_niveau.get_width() // 2, 120))
         else:
             # Vies J1 (Gauche)
             txt_vies_j1 = font_vies.render(f"VIES : {vies_j1}", True, (255, 0, 0))
