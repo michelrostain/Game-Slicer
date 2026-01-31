@@ -14,6 +14,12 @@ def load_assets():
     try:
         images["pomme"] = pygame.image.load("Assets/Images/pomme.jpg").convert_alpha()
         print("✓ Image pomme chargée")
+
+        images["poire"] = {
+            "up": pygame.image.load("Assets/Images/angry_pear.png").convert_alpha(),
+            "down": pygame.image.load("Assets/Images/scared_pear.png").convert_alpha(),
+            "cut": pygame.image.load("Assets/Images/cut_pear.png").convert_alpha()
+        }
     except pygame.error as e:
         print(f"✗ Erreur chargement pomme.jpg : {e}")
         images["pomme"] = None

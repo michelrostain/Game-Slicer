@@ -1,5 +1,6 @@
 import pygame
 import math
+from objets import Glacon
 
 # Variables pour le slicing à la souris
 slicing = False
@@ -47,13 +48,22 @@ def update_slice(mouse_pos, mes_fruits, screen_width, nombre_de_joueurs=1):
             distance = math.sqrt((mx - fruit.x)**2 + (my - fruit.y)**2)
             
             if distance < fruit.radius:
-                # TOUCHÉ !
-                if fruit in mes_fruits:
-                    mes_fruits.remove(fruit)
-                    # Petit print pour debug
-                    zone = "DROITE" if fruit.x > milieu_x else "GAUCHE"
-                    print(f"[J2 SOURIS] Fruit {fruit.type} coupé en direct zone {zone} !")
-
+                # Vérifie qu'on ne coupe pas un fruit déjà coupé
+                if not fruit.sliced: 
+                    
+                    # DÉTECTION DU TYPE
+                    if isinstance(fruit, Glacon) or fruit.type == "glacon":
+                         mes_fruits.remove(fruit) # Le glaçon disparait
+                         return "freeze"
+                    
+                    # SI C'EST UNE POIRE (ou fruit à états)
+                    elif fruit.images_set:
+                        fruit.couper() # On change l'image, MAIS on ne remove pas
+                        # Le fruit va continuer de tomber avec l'image "cut"
+                    
+                    # SI C'EST UN FRUIT NORMAL (Pomme standard)
+                    else:
+                        mes_fruits.remove(fruit) # On supprime direct
 def end_slice(mes_fruits, screen_width=None, nombre_de_joueurs=1):
     """
     Termine le slicing.
@@ -86,7 +96,15 @@ def handle_keyboard_inputs(mes_fruits, screen_width, screen_height, key, nombre_
             # Le fruit est-il dans la zone activée par la touche ?
             if zone[0] <= fruit.x <= zone[2] and zone[1] <= fruit.y <= zone[3]:
                 # Sécurité : on vérifie qu'il est bien dans la moitié gauche globale
-                if fruit.x < milieu_x:
+                if isinstance(fruit, Glacon) or fruit.type == "glacon":
+                         mes_fruits.remove(fruit)
+                         bonus_active = "freeze"
+                    
+                elif fruit.images_set:
+                    fruit.couper()
+                    sliced += 1
+                
+                else:
                     mes_fruits.remove(fruit)
                     sliced += 1
         
