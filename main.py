@@ -1,7 +1,7 @@
 import pygame, random
 from constantes import liste_fruits, images, load_assets
 import controller
-from objets import Fruit
+from objets import Fruit, Glacon
 from interface import Bouton, dessiner_regles, dessiner_scores
 
 # INITIALISATION
@@ -214,13 +214,19 @@ while running:
             
             compteur += 1
             if compteur >= frequence_lancer:
-                type_fruit = random.choice(liste_fruits)
-                if nombre_de_joueurs == 2:
-                    zone_joueur = random.choice([1, 2])
+                # 1 chance sur 10 de faire apparaître un Glaçon
+                if random.randint(1, 10) == 1:
+                    # On crée un glaçon
+                    mes_fruits.append(Glacon(screen.get_width(), screen.get_height()))
                 else:
-                    zone_joueur = None 
+                    # Sinon, on crée un fruit normal (Code d'avant)
+                    type_fruit = random.choice(liste_fruits)
+                    if nombre_de_joueurs == 2:
+                        zone_joueur = random.choice([1, 2])
+                    else:
+                        zone_joueur = None
                     
-                mes_fruits.append(Fruit(type_fruit, screen.get_width(), screen.get_height(), zone_joueur))
+                    mes_fruits.append(Fruit(type_fruit, screen.get_width(), screen.get_height(), zone_joueur))
                 compteur = 0
                 frequence_lancer = random.randint(30, 100)
 
@@ -256,7 +262,7 @@ while running:
             if f.y > screen.get_height() + 50: 
                 mes_fruits.remove(f)
                 
-                if not en_attente:
+                if not f.sliced and not en_attente:
                     if nombre_de_joueurs == 1:
                         # Mode 1 joueur : on utilise vies_j1 par défaut
                         vies_j1 -= 1
