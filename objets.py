@@ -174,13 +174,33 @@ class Fruit:
             pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
 
 class Glacon:
-    def __init__(self, largeur, hauteur, gravity=0.4):
-        self.type = "glacon"
+    def __init__(self, largeur, hauteur, zone_joueur=None, gravity=0.4):
+        self.type = "ice"
         self.sliced = False
         self.images_set = None
+        self.zone_joueur = zone_joueur
         
         self.radius = 40
         self.color = (173, 216, 230)  # Bleu clair
+        
+        # Gestion de l'image du glaçon
+        raw_image = images.get("ice")
+        if raw_image is not None:
+            HAUTEUR_CIBLE = 120
+            ratio = raw_image.get_width() / raw_image.get_height()
+            nouvelle_largeur = int(HAUTEUR_CIBLE * ratio)
+            self.image = pygame.transform.smoothscale(raw_image, (nouvelle_largeur, HAUTEUR_CIBLE))
+        else:
+            self.image = None
+            
+        # Positionnement initial
+        milieu_x = largeur // 2
+        if zone_joueur == 1:
+            self.x = random.randint(100, milieu_x - 100)
+        elif zone_joueur == 2:
+            self.x = random.randint(milieu_x + 100, largeur - 100)
+        else:
+            self.x = random.randint(100, largeur - 100)
         
         self.x = random.randint(100, largeur - 100)
         self.y = hauteur
@@ -202,8 +222,111 @@ class Glacon:
         if self.x + self.radius > largeur_ecran:
             self.x = largeur_ecran - self.radius
             self.speed_x *= -1
+            
+        # Confinement aux zones en mode 2 joueurs
+        if self.zone_joueur is not None:
+            milieu_x = largeur_ecran // 2
+            if self.zone_joueur == 1:
+                if self.x + self.radius > milieu_x:
+                    self.x = milieu_x - self.radius
+                    self.speed_x *= -1
+            elif self.zone_joueur == 2:
+                if self.x - self.radius < milieu_x:
+                    self.x = milieu_x + self.radius
+                    self.speed_x *= -1
     
     def draw(self, surface):
-        pygame.draw.circle(surface, self.color, (int(self.x), int(self.y)), self.radius)
-        # Effet de reflet blanc
-        pygame.draw.circle(surface, (255, 255, 255), (int(self.x - 10), int(self.y - 10)), 10)
+        """Afficher l'image si disponible, sinon cercle bleu"""
+        if self.image:
+            rect = self.image.get_rect(center=(int(self.x), int(self.y)))
+            surface.blit(self.image, rect)
+        else:
+            # Fallback : cercle bleu avec reflet
+            pygame.draw.circle(surface, self.color, (int(self.x), int(self.y)), self.radius)
+            pygame.draw.circle(surface, (255, 255, 255), (int(self.x - 10), int(self.y - 10)), 10)
+    
+    # Méthode appelée quand le glaçon est tranché
+    def couper(self):
+        """Méthode appelée quand le glaçon est tranché"""
+        self.sliced = True
+        
+        # On peut ajouter un effet visuel ici si besoin
+        self.speed_y = -5  # Petit saut visuel vers le haut après la coupe
+        # Optionnel : changer l'image pour un glaçon brisé si disponible
+        # (non implémenté ici pour simplification)
+
+class Bombe:
+    def __init__(self, largeur, hauteur, zone_joueur=None, gravity=0.4):
+        self.type = "bombe"
+        self.sliced = False
+        self.images_set = None
+        self.zone_joueur = zone_joueur
+        
+        self.radius = 40
+        self.color = (50, 50, 50)  # Gris foncé (fallback)
+        
+        # --- Gestion de l'image bombe.png ---
+        raw_image = images.get("bombe")
+        if raw_image is not None:
+            HAUTEUR_CIBLE = 80
+            ratio = raw_image.get_width() / raw_image.get_height()
+            nouvelle_largeur = int(HAUTEUR_CIBLE * ratio)
+            self.image = pygame.transform.smoothscale(raw_image, (nouvelle_largeur, HAUTEUR_CIBLE))
+        else:
+            self.image = None
+        
+        # --- Positionnement (même logique que Fruit) ---
+        milieu_x = largeur // 2
+        if zone_joueur == 1:
+            self.x = random.randint(100, milieu_x - 100)
+        elif zone_joueur == 2:
+            self.x = random.randint(milieu_x + 100, largeur - 100)
+        else:
+            self.x = random.randint(100, largeur - 100)
+        
+        self.y = hauteur
+        self.speed_x = random.uniform(-10, 10)
+        self.speed_y = random.uniform(-20, -10)
+        self.gravity = gravity
+    
+    def update(self, largeur_ecran, speed_factor=1):
+        """Met à jour la bombe"""
+        self.speed_y += self.gravity * speed_factor
+        self.x += self.speed_x * speed_factor
+        self.y += self.speed_y * speed_factor
+        
+        # Rebonds
+        if self.x - self.radius < 0:
+            self.x = self.radius
+            self.speed_x *= -1
+        
+        if self.x + self.radius > largeur_ecran:
+            self.x = largeur_ecran - self.radius
+            self.speed_x *= -1
+        
+        # Confinement aux zones
+        if self.zone_joueur is not None:
+            milieu_x = largeur_ecran // 2
+            if self.zone_joueur == 1:
+                if self.x + self.radius > milieu_x:
+                    self.x = milieu_x - self.radius
+                    self.speed_x *= -1
+            elif self.zone_joueur == 2:
+                if self.x - self.radius < milieu_x:
+                    self.x = milieu_x + self.radius
+                    self.speed_x *= -1
+    
+    def draw(self, surface):
+        """Affiche la bombe"""
+        if self.image:
+            rect = self.image.get_rect(center=(int(self.x), int(self.y)))
+            surface.blit(self.image, rect)
+        else:
+            # Fallback : cercle noir avec mèche
+            pygame.draw.circle(surface, self.color, (int(self.x), int(self.y)), self.radius)
+            # Mèche blanche
+            pygame.draw.line(surface, (255, 255, 255), (int(self.x), int(self.y) - self.radius), (int(self.x), int(self.y) - self.radius - 20), 3)
+    
+    def couper(self):
+        """Méthode appelée quand la bombe est tranchée"""
+        self.sliced = True

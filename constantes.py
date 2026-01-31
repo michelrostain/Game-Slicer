@@ -1,6 +1,7 @@
 import pygame
 
 liste_fruits = ["poire", "pomme", "banane", "orange"]
+liste_objets_speciaux = ["bombe", "ice"]
 
 images = {}  # Dict vide, rempli dans load_assets()
 
@@ -42,6 +43,21 @@ def load_assets():
         # Fallback
         for fruit in liste_fruits:
             images[fruit] = None
+            
+    # Images des objets spéciaux
+    try:
+        images["bombe"] = pygame.image.load("Assets/Images/Special/bombe.png").convert_alpha()
+        print("✓ Image bombe chargée")
+    except pygame.error as e:
+        print(f"✗ Erreur chargement image bombe : {e}")
+        images["bombe"] = None
+        
+    try:
+        images["ice"] = pygame.image.load("Assets/Images/Special/ice.png").convert_alpha()
+        print("✓ Image ice chargée")
+    except pygame.error as e:
+        print(f"✗ Erreur chargement image ice : {e}")
+        images["ice"] = None
 
 # Configuration du jeu (pour le futur menu)
 CONFIG = {

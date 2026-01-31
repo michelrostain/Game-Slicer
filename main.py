@@ -1,7 +1,8 @@
-import pygame, random
-from constantes import liste_fruits, images, load_assets
+import pygame
+import random
+from constantes import liste_fruits, liste_objets_speciaux, images, load_assets
 import controller
-from objets import Fruit, Glacon
+from objets import Fruit, Glacon, Bombe
 from interface import Bouton, dessiner_regles, dessiner_scores
 
 # INITIALISATION
@@ -33,13 +34,12 @@ start_ticks = 0
 vies_j1 = 3
 vies_j2 = 3
 
-# --- BOUTONS ---
-cx = L_ecran // 2
-bouton_1j = Bouton(cx - 150, 150, 300, 60, "1 Joueur", (0, 100, 0), (0, 150, 0))
-bouton_2j = Bouton(cx - 150, 230, 300, 60, "2 Joueurs", (0, 0, 100), (0, 0, 150))
-bouton_regles = Bouton(cx - 150, 310, 300, 60, "Comment jouer", (100, 100, 0), (150, 150, 0))
-bouton_scores = Bouton(cx - 150, 390, 300, 60, "Scores", (100, 0, 100), (150, 0, 150))
-bouton_quitter = Bouton(cx - 150, 550, 300, 60, "Quitter", (100, 0, 0), (150, 0, 0))
+screen_center_x = L_ecran // 2
+bouton_1j = Bouton(screen_center_x - 150, 150, 300, 60, "1 Joueur", (0, 100, 0), (0, 150, 0))
+bouton_2j = Bouton(screen_center_x - 150, 230, 300, 60, "2 Joueurs", (0, 0, 100), (0, 0, 150))
+bouton_regles = Bouton(screen_center_x - 150, 310, 300, 60, "Comment jouer", (100, 100, 0), (150, 150, 0))
+bouton_scores = Bouton(screen_center_x - 150, 390, 300, 60, "Scores", (100, 0, 100), (150, 0, 150))
+bouton_quitter = Bouton(screen_center_x - 150, 550, 300, 60, "Quitter", (100, 0, 0), (150, 0, 0))
 bouton_retour = Bouton(20, 20, 150, 50, "Retour", (50, 50, 50), (100, 100, 100))
 bouton_menu_go = Bouton(0, 0, 300, 60, "Menu Principal", (100, 100, 100), (150, 150, 150))
 
@@ -51,6 +51,10 @@ running = True
 niveau = 1
 score = 0
 gravite_actuelle = 0.4
+freeze_actif = False
+freeze_timer = 0
+freeze_duree = 0 # sera défini aléatoirement entre 3 et 5 secondes
+is_bomb_exploded = False
 
 # Gestion du son
 try:
@@ -102,6 +106,11 @@ while running:
                 niveau = 1
                 score = 0
                 gravite_actuelle = 0.4 
+                
+                # Reset du freeze
+                freeze_actif = False
+                freeze_timer = 0
+                is_bomb_exploded = False
 
                 son_decompte.stop() # Coupe le son s'il jouait déjà
                 son_decompte.play()
@@ -114,7 +123,11 @@ while running:
                 vies_j1 = 3
                 vies_j2 = 3
                 start_ticks = pygame.time.get_ticks()
-
+                
+                # Reset du freeze
+                freeze_actif = False
+                freeze_timer = 0
+                is_bomb_exploded = False
                 son_decompte.stop() # Coupe le son s'il jouait déjà
                 son_decompte.play()
 
@@ -143,7 +156,16 @@ while running:
                 if event.type == pygame.MOUSEBUTTONUP:
                     controller.end_slice(mes_fruits, screen.get_width(), nombre_de_joueurs)
                 if event.type == pygame.KEYDOWN:
-                    controller.handle_keyboard_inputs(mes_fruits, screen.get_width(), screen.get_height(), event.key, nombre_de_joueurs)
+                    result = controller.handle_keyboard_inputs(mes_fruits, screen.get_width(), screen.get_height(), event.key, nombre_de_joueurs)
+                    if result == "game_over":
+                        etat_jeu = "game_over"
+                        is_bomb_exploded = True
+                        print("BOOM ! Bombe tranchée au clavier !")
+                    elif result == "freeze":
+                        freeze_actif = True
+                        freeze_duree = random.randint(3, 5)
+                        freeze_timer = freeze_duree * 60
+                        print(f"❄️ FREEZE activé au clavier pour {freeze_duree} secondes !")
 
     # 2. LOGIQUE ET DESSIN
     
@@ -168,44 +190,55 @@ while running:
 
     # --- ÉCRAN GAME OVER (LOGIQUE MODIFIÉE) ---
     elif etat_jeu == "game_over":
+    
         screen.fill((20, 0, 0)) # Fond rouge sombre général
-        
+    
         milieu_x = screen.get_width() // 2
         
-        # Ligne de séparation pour garder la cohérence visuelle
-        if nombre_de_joueurs == 2:
-            pygame.draw.line(screen, (100, 0, 0), (milieu_x, 0), (milieu_x, screen.get_height()), 2)
-
         font_go = pygame.font.Font(None, 80)
-        font_raison = pygame.font.Font(None, 40)
-        
-        txt_go = font_go.render("GAME OVER", True, (255, 0, 0))
-        txt_perdu = font_raison.render("Vous avez perdu !", True, (200, 200, 200))
-        txt_gagne = font_go.render("VAINQUEUR !", True, (0, 255, 0))
-
-        if nombre_de_joueurs == 1:
-            # Affichage classique centré
-            screen.blit(txt_go, (screen.get_width()//2 - txt_go.get_width()//2, screen.get_height()//2 - 100))
-        else:
-            # --- LOGIQUE GAME OVER 2 JOUEURS ---
+        font_raison = pygame.font.Font(None, 40)  # Défini ici pour les deux cas
+    
+        if is_bomb_exploded:
+            # Affichage centré pour bombe explosée
+            txt_go = font_go.render("GAME OVER", True, (255, 0, 0))
+            txt_boom = font_go.render("💥 BOOM !", True, (255, 255, 0))
+            txt_egalite = font_raison.render("Égalité ! Les deux joueurs ont perdu simultanément.", True, (200, 200, 200))
             
-            # Affichage pour le Joueur 1 (Gauche)
-            if vies_j1 <= 0:
-                # J1 a perdu
-                screen.blit(txt_go, (milieu_x//2 - txt_go.get_width()//2, screen.get_height()//2 - 100))
-                screen.blit(txt_perdu, (milieu_x//2 - txt_perdu.get_width()//2, screen.get_height()//2 - 20))
-            else:
-                # J1 a gagné (car le jeu s'arrête si l'un perd)
-                screen.blit(txt_gagne, (milieu_x//2 - txt_gagne.get_width()//2, screen.get_height()//2 - 100))
+            screen.blit(txt_go, (screen.get_width()//2 - txt_go.get_width()//2, screen.get_height()//2 - 100))
+            screen.blit(txt_boom, (screen.get_width()//2 - txt_boom.get_width()//2, screen.get_height()//2 - 20))
+            screen.blit(txt_egalite, (screen.get_width()//2 - txt_egalite.get_width()//2, screen.get_height()//2 + 40))
+        else:
+            # Ligne de séparation pour garder la cohérence visuelle
+            if nombre_de_joueurs == 2:
+                pygame.draw.line(screen, (100, 0, 0), (milieu_x, 0), (milieu_x, screen.get_height()), 2)
+            
+            txt_go = font_go.render("GAME OVER", True, (255, 0, 0))
+            txt_perdu = font_raison.render("Vous avez perdu !", True, (200, 200, 200))
+            txt_gagne = font_go.render("VAINQUEUR !", True, (0, 255, 0))
 
-            # Affichage pour le Joueur 2 (Droite)
-            if vies_j2 <= 0:
-                # J2 a perdu
-                screen.blit(txt_go, (milieu_x + milieu_x//2 - txt_go.get_width()//2, screen.get_height()//2 - 100))
-                screen.blit(txt_perdu, (milieu_x + milieu_x//2 - txt_perdu.get_width()//2, screen.get_height()//2 - 20))
+            if nombre_de_joueurs == 1:
+                # Affichage classique centré
+                screen.blit(txt_go, (screen.get_width()//2 - txt_go.get_width()//2, screen.get_height()//2 - 100))
             else:
-                # J2 a gagné
-                screen.blit(txt_gagne, (milieu_x + milieu_x//2 - txt_gagne.get_width()//2, screen.get_height()//2 - 100))
+                # --- LOGIQUE GAME OVER 2 JOUEURS ---
+                
+                # Affichage pour le Joueur 1 (Gauche)
+                if vies_j1 <= 0:
+                    # J1 a perdu
+                    screen.blit(txt_go, (milieu_x//2 - txt_go.get_width()//2, screen.get_height()//2 - 100))
+                    screen.blit(txt_perdu, (milieu_x//2 - txt_perdu.get_width()//2, screen.get_height()//2 - 20))
+                else:
+                    # J1 a gagné (car le jeu s'arrête si l'un perd)
+                    screen.blit(txt_gagne, (milieu_x//2 - txt_gagne.get_width()//2, screen.get_height()//2 - 100))
+
+                # Affichage pour le Joueur 2 (Droite)
+                if vies_j2 <= 0:
+                    # J2 a perdu
+                    screen.blit(txt_go, (milieu_x + milieu_x//2 - txt_go.get_width()//2, screen.get_height()//2 - 100))
+                    screen.blit(txt_perdu, (milieu_x + milieu_x//2 - txt_perdu.get_width()//2, screen.get_height()//2 - 20))
+                else:
+                    # J2 a gagné
+                    screen.blit(txt_gagne, (milieu_x + milieu_x//2 - txt_gagne.get_width()//2, screen.get_height()//2 - 100))
 
         bouton_menu_go.dessiner(screen)
 
@@ -217,23 +250,40 @@ while running:
 
         # --- LOGIQUE ---
         if not en_attente:
+            # Gestion du freeze
+            if freeze_actif:
+                freeze_timer -= 1
+                if freeze_timer <= 0:
+                    freeze_actif = False
+                    print("Effet de freeze terminé.")
+            
+            # Gestion de la souris
             if controller.slicing:
                 result = controller.update_slice(pygame.mouse.get_pos(), mes_fruits, screen.get_width(), nombre_de_joueurs)
-                if result == 1 and nombre_de_joueurs == 1:
-                    score += 1
-                    # Gestion de la montée de niveau tous les 10 points
-                    if score > 0 and score % 10 == 0:
-                        niveau += 1
-                        # Augmentation de la gravité
-                        gravite_actuelle = (min(0.4 + (niveau - 1) * 0.03, 1.0))
-                elif result == "freeze" and nombre_de_joueurs == 1:
-                    # Activer l'effet de freeze à partir du niveau 3
-                    if niveau >= 3:
-                        vies_j1 -= 1
-                        if vies_j1 <= 0:
-                            etat_jeu = "game_over"
-            
+    
+                # --- TRAITEMENT DU RÉSULTAT ---
+                if result == "game_over":
+                    # La bombe a été tranchée : partie terminée
+                    etat_jeu = "game_over"
+                    print("BOOM ! Bombe tranchée !")
+    
+                elif result == "freeze":
+                    # Le glaçon a été tranché : activation du freeze
+                    freeze_actif = True
+                    freeze_duree = random.randint(3, 5)  # Entre 3 et 5 secondes
+                    freeze_timer = freeze_duree * 60  # Conversion en frames (60 FPS)
+                    print(f"❄️ FREEZE activé pour {freeze_duree} secondes !")
+
+                elif result == 1:  # Point marqué
+                    if nombre_de_joueurs == 1:
+                        score += 1
+                        # Gestion de la montée de niveau tous les 10 points
+                        if score > 0 and score % 10 == 0:
+                            niveau += 1
+                            # Augmentation de la gravité
+                            gravite_actuelle = (min(0.4 + (niveau - 1) * 0.03, 1.0))
             compteur += 1
+            
             # Ajustement de la fréquence en fonction du niveau (uniquement en mode 1 joueur)
             if nombre_de_joueurs == 1:
                 min_freq = max(20, 50 - (niveau - 1) * 2)  # Fréquence minimale diminue avec le niveau
@@ -242,21 +292,31 @@ while running:
                 min_freq = 30  # Valeurs par défaut pour mode 2 joueurs
                 max_freq = 100
             if compteur >= frequence_lancer:
-                # 1 chance sur 10 de faire apparaître un Glaçon (dans les deux modes)
-                if random.randint(1, 10) == 1:
-                    # On crée un glaçon
-                    mes_fruits.append(Glacon(screen.get_width(), screen.get_height(), gravite_actuelle if nombre_de_joueurs == 1 else 0.4))
+                # Gestion de la zone (2 joueurs ou non)
+                if nombre_de_joueurs == 2:
+                    zone_joueur = random.choice([1, 2])
                 else:
-                    # Sinon, on crée un fruit normal (Code d'avant)
-                    type_fruit = random.choice(liste_fruits)
-                    if nombre_de_joueurs == 2:
-                        zone_joueur = random.choice([1, 2])
-                    else:
-                        zone_joueur = None
+                    zone_joueur = None
+                
+                # Gravité selon le mode
+                gravite_pour_objet = gravite_actuelle if nombre_de_joueurs == 1 else 0.4
+                
+                # --- 30% DE CHANCE D'OBJET SPÉCIAL (BOMBE OU ICE) ---
+                if random.randint(1, 100) <= 30:
+                    # Choix aléatoire entre bombe et ice
+                    type_special = random.choice(liste_objets_speciaux)
                     
-                    # Passer la gravité actuelle uniquement si mode 1 joueur, sinon défaut
-                    gravite_pour_fruit = gravite_actuelle if nombre_de_joueurs == 1 else 0.4
-                    mes_fruits.append(Fruit(type_fruit, screen.get_width(), screen.get_height(), zone_joueur, gravite_pour_fruit))
+                    if type_special == "bombe":
+                        mes_fruits.append(Bombe(screen.get_width(), screen.get_height(), zone_joueur, gravite_pour_objet))
+                        print("💣 Bombe apparue !")
+                    else:  # type_special == "ice"
+                        mes_fruits.append(Glacon(screen.get_width(), screen.get_height(), zone_joueur, gravite_pour_objet))
+                        print("❄️ Glaçon apparu !")
+                else:
+                    # 70% : Fruit normal
+                    type_fruit = random.choice(liste_fruits)
+                    mes_fruits.append(Fruit(type_fruit, screen.get_width(), screen.get_height(), zone_joueur, gravite_pour_objet))
+                
                 compteur = 0
                 frequence_lancer = random.randint(min_freq, max_freq)
 
@@ -285,7 +345,9 @@ while running:
         # --- GESTION FRUITS ET VIES SÉPARÉES ---
         for f in mes_fruits[:]:
             if not en_attente:
-                f.update(screen.get_width())
+                # Les fruits ne bougent que si pas de freeze actif
+                if not freeze_actif:
+                    f.update(screen.get_width())
             f.draw(screen)
 
             # --- DÉTECTION FRUIT RATÉ ---
@@ -332,6 +394,28 @@ while running:
             # Vies J2 (Droite)
             txt_vies_j2 = font_vies.render(f"VIES : {vies_j2}", True, (255, 0, 0))
             screen.blit(txt_vies_j2, (milieu_x + milieu_x // 2 - txt_vies_j2.get_width() // 2, 70))
+            
+        # --- AFFICHAGE DU FREEZE ---
+        if freeze_actif:
+            # Overlay semi-transparent bleu
+            overlay = pygame.Surface((largeur_ecran, hauteur_ecran))
+            overlay.set_alpha(50)  # Transparence
+            overlay.fill((0, 200, 255))  # Bleu clair
+            screen.blit(overlay, (0, 0))
+            
+            # Message "FREEZE" avec temps restant
+            font_freeze = pygame.font.Font(None, 120)
+            temps_restant = freeze_timer / 60  # Conversion frames -> secondes
+            txt_freeze = font_freeze.render(f"❄️ FREEZE", True, (0, 255, 255))
+            
+            font_timer = pygame.font.Font(None, 80)
+            txt_timer = font_timer.render(f"{temps_restant:.1f}s", True, (255, 255, 255))
+            
+            # Effet de clignotement pour le message
+            if (freeze_timer // 15) % 2 == 0:  # Clignote toutes les 15 frames
+                screen.blit(txt_freeze, (largeur_ecran//2 - txt_freeze.get_width()//2, hauteur_ecran//2 - 80))
+            
+            screen.blit(txt_timer, (largeur_ecran//2 - txt_timer.get_width()//2, hauteur_ecran//2 + 20))
 
 
         # --- DÉCOMPTE DÉBUT DE JEU ---
