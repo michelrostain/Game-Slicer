@@ -67,6 +67,24 @@
             "niveau": 1,
             "date": "2026-02-01 23:00:04",
             "duree_secondes": 12.445
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-02 00:05:13",
+            "duree_secondes": 1.9900000000000002
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-02 00:06:27",
+            "duree_secondes": 6.916
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-02 00:07:11",
+            "duree_secondes": 36.644
         }
     ],
     "historique_2j": [
@@ -118,6 +136,34 @@
             "date": "2026-02-01 18:32:16",
             "duree_secondes": 26.773,
             "gagnant": "J1"
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-01 23:06:27",
+            "duree_secondes": 9.515,
+            "gagnant": "J2"
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-02 00:05:28",
+            "duree_secondes": 6.0920000000000005,
+            "gagnant": "J1"
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-02 00:05:48",
+            "duree_secondes": 8.328,
+            "gagnant": "J1"
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-02 00:07:23",
+            "duree_secondes": 4.923,
+            "gagnant": "J2"
         }
     ]
 }

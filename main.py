@@ -1,7 +1,7 @@
 import pygame, random
 from constantes import liste_fruits, liste_objets_speciaux, images, load_assets
 import controller
-from objets import Fruit, Glacon, Bombe
+from objets import Fruit, Glacon, Bombe, ParticuleExplosion, ParticuleGlace
 from interface import Bouton, dessiner_regles, dessiner_scores
 from scores import (
     creer_fichier_scores_si_absent,
@@ -398,6 +398,8 @@ bouton_menu_go = Bouton(
 # Variables de jeu
 mes_fruits = []
 morceaux_fruits = []
+particules_explosion = []
+particules_glace = []
 frequence_lancer = random.randint(30, 100)
 compteur = 0
 running = True
@@ -432,7 +434,35 @@ try:
 except (pygame.error, FileNotFoundError):
     print("Son manquant, création d'un son vide.")
     son_decompte = pygame.mixer.Sound(buffer=bytearray())
-
+    
+try:
+    son_sliced = pygame.mixer.Sound("Assets/Sounds/sliced.wav")
+    son_sliced.set_volume(0.5)
+except (pygame.error, FileNotFoundError):
+    print("Son manquant, création d'un son vide.")
+    son_sliced = pygame.mixer.Sound(buffer=bytearray())
+    
+try:
+    son_bomb = pygame.mixer.Sound("Assets/Sounds/bomb.wav")
+    son_bomb.set_volume(0.7)
+except (pygame.error, FileNotFoundError):
+    print("Son manquant, création d'un son vide.")
+    son_bomb = pygame.mixer.Sound(buffer=bytearray())
+    
+try:
+    son_freeze = pygame.mixer.Sound("Assets/Sounds/freeze.wav")
+    son_freeze.set_volume(0.5)
+except (pygame.error, FileNotFoundError):
+    print("Son manquant, création d'un son vide.")
+    son_freeze = pygame.mixer.Sound(buffer=bytearray())
+    
+try:
+    son_win = pygame.mixer.Sound("Assets/Sounds/win.mp3")
+    son_win.set_volume(0.6)
+except (pygame.error, FileNotFoundError):
+    print("Son manquant, création d'un son vide.")
+    son_win = pygame.mixer.Sound(buffer=bytearray())
+    
 # --- BOUCLE PRINCIPALE ---
 while running:
 
@@ -605,6 +635,7 @@ while running:
                             freeze_j2_en_attente = True
                             freeze_j2_delai_timer = FREEZE_DELAI_FRAMES
                     elif isinstance(result, int) and result > 0:
+                        son_sliced.play()
                         # Score du clavier (mode 1 joueur)
                         if nombre_de_joueurs == 1:
                             score += result
@@ -868,6 +899,13 @@ while running:
 
                 # --- TRAITEMENT DU RÉSULTAT ---
                 if result == "game_over":
+                    # Jouer le son de la bombe
+                    son_bomb.play()
+                    
+                    # Créer les particules d'explosion à la position de la souris
+                    mx, my = pygame.mouse.get_pos()
+                    for _ in range(50):  # 50 particules
+                        particules_explosion.append(ParticuleExplosion(mx, my))
                     if nombre_de_joueurs == 1:
                         duree_partie = (
                             (pygame.time.get_ticks() - start_ticks) / 1000
@@ -879,6 +917,13 @@ while running:
                     print("BOOM ! Bombe tranchée !")
 
                 elif result == "freeze":
+                    # Jouer le son du freeze
+                    son_freeze.play()
+                    
+                    # Créer les particules de glace
+                    mx, my = pygame.mouse.get_pos()
+                    for _ in range(30):  # 30 particules
+                        particules_glace.append(ParticuleGlace(mx, my))
                     # Le glaçon a été tranché : activation du freeze différé
                     if not freeze_actif and not freeze_en_attente:
                         freeze_en_attente = True
@@ -900,7 +945,7 @@ while running:
                         print("Glaçon tranché J2 ! Freeze différé J2 activé.")
 
                 elif isinstance(result, int) and result > 0:
-                    pass
+                    son_sliced.play()
 
             compteur += 1
 
@@ -1043,7 +1088,8 @@ while running:
                                 gagnant = "J2"
                             else:
                                 gagnant = "J1"
-
+                            
+                            son_win.play()
                             duree_partie = (
                                 (pygame.time.get_ticks() - start_ticks) / 1000
                             ) - 3

@@ -1,3 +1,4 @@
+import math
 import pygame, random
 from constantes import images
 
@@ -614,3 +615,106 @@ class MorceauFruit:
             morceaux_fruits = [m for m in morceaux_fruits if not m.est_termine()]
         """
         return self.alpha <= 0
+    
+# ============================================================================
+# CLASSE : ParticuleExplosion
+# ============================================================================
+class ParticuleExplosion:
+    """Particule pour l'animation d'explosion de la bombe"""
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        # Vitesse aléatoire dans toutes les directions
+        angle = random.uniform(0, 2 * 3.14159)
+        vitesse = random.uniform(5, 15)
+        self.speed_x = vitesse * math.cos(angle)
+        self.speed_y = vitesse * math.sin(angle)
+        self.gravity = 0.3
+        # Taille qui diminue
+        self.taille = random.randint(8, 20)
+        # Couleur orange/rouge/jaune
+        self.couleur = random.choice([
+            (255, 100, 0),   # Orange
+            (255, 50, 0),    # Rouge-orange
+            (255, 200, 0),   # Jaune
+            (200, 50, 0),    # Rouge foncé
+        ])
+        self.alpha = 255
+        self.duree_vie = random.randint(30, 60)  # Frames
+        self.age = 0
+    
+    def update(self):
+        self.speed_y += self.gravity
+        self.x += self.speed_x
+        self.y += self.speed_y
+        self.age += 1
+        # Fade out progressif
+        self.alpha = max(0, 255 - (self.age * 255 // self.duree_vie))
+        self.taille = max(1, self.taille - 0.3)
+    
+    def draw(self, surface):
+        if self.alpha > 0:
+            s = pygame.Surface((int(self.taille * 2), int(self.taille * 2)), pygame.SRCALPHA)
+            pygame.draw.circle(s, (*self.couleur, self.alpha), 
+                             (int(self.taille), int(self.taille)), int(self.taille))
+            surface.blit(s, (int(self.x - self.taille), int(self.y - self.taille)))
+    
+    def est_termine(self):
+        return self.age >= self.duree_vie
+
+
+# ============================================================================
+# CLASSE : ParticuleGlace
+# ============================================================================
+class ParticuleGlace:
+    """Particule pour l'animation de brisure du glaçon (éclats de glace)"""
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        # Vitesse aléatoire (plus lente que l'explosion)
+        angle = random.uniform(0, 2 * 3.14159)
+        vitesse = random.uniform(3, 8)
+        self.speed_x = vitesse * math.cos(angle)
+        self.speed_y = vitesse * math.sin(angle) - 3  # Légèrement vers le haut
+        self.gravity = 0.2
+        # Taille variable pour les éclats
+        self.taille = random.randint(5, 15)
+        # Nuances de bleu clair / blanc
+        self.couleur = random.choice([
+            (173, 216, 230),  # Bleu clair
+            (200, 230, 255),  # Bleu très clair
+            (255, 255, 255),  # Blanc
+            (135, 206, 250),  # Bleu ciel
+        ])
+        self.alpha = 255
+        self.duree_vie = random.randint(40, 70)
+        self.age = 0
+        self.rotation = random.uniform(0, 360)
+        self.rotation_speed = random.uniform(-10, 10)
+    
+    def update(self):
+        self.speed_y += self.gravity
+        self.x += self.speed_x
+        self.y += self.speed_y
+        self.rotation += self.rotation_speed
+        self.age += 1
+        self.alpha = max(0, 255 - (self.age * 255 // self.duree_vie))
+    
+    def draw(self, surface):
+        if self.alpha > 0:
+            # Dessine un losange (éclat de glace)
+            s = pygame.Surface((int(self.taille * 2), int(self.taille * 2)), pygame.SRCALPHA)
+            points = [
+                (self.taille, 0),
+                (self.taille * 2, self.taille),
+                (self.taille, self.taille * 2),
+                (0, self.taille)
+            ]
+            pygame.draw.polygon(s, (*self.couleur, self.alpha), points)
+            # Rotation
+            s = pygame.transform.rotate(s, self.rotation)
+            rect = s.get_rect(center=(int(self.x), int(self.y)))
+            surface.blit(s, rect)
+    
+    def est_termine(self):
+        return self.age >= self.duree_vie
