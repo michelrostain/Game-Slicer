@@ -74,7 +74,7 @@ class Fruit:
                     )
             
             # Image initiale : état "up" (fruit montant)
-            self.image = self.images_set["up"]
+            self.image = self.images_set.get("up", self.images_set.get("cut"))
 
         elif raw_image is not None:
             # Cas d'un fruit simple (sans états multiples)
@@ -125,9 +125,9 @@ class Fruit:
         # Changement d'image pour les fruits avec états (ex: poire)
         if self.images_set and not self.sliced:
             if self.speed_y < 0:
-                self.image = self.images_set["up"]  # Fruit montant
+                self.image = self.images_set.get("up", self.images_set.get("cut"))  # Fruit montant
             else:
-                self.image = self.images_set["down"]  # Fruit descendant
+                self.image = self.images_set.get("down", self.images_set.get("cut"))  # Fruit descendant
 
         # --- REBONDS SUR LES BORDS DE L'ÉCRAN ---
         # Bord gauche : rebond si le fruit sort à gauche
@@ -160,7 +160,7 @@ class Fruit:
         self.sliced = True
         # Changement d'image si le fruit a des états (ex: poire coupée)
         if self.images_set:
-            self.image = self.images_set["cut"]
+            self.image = self.images_set.get("cut", self.image)
             self.speed_y = -5  # Petit saut visuel vers le haut après la coupe
 
     def draw(self, screen):
@@ -202,7 +202,6 @@ class Glacon:
         else:
             self.x = random.randint(100, largeur - 100)
         
-        self.x = random.randint(100, largeur - 100)
         self.y = hauteur
         self.speed_x = random.uniform(-8, 8)
         self.speed_y = random.uniform(-18, -12)

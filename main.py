@@ -1,9 +1,208 @@
-import pygame
-import random
+import pygame, random
 from constantes import liste_fruits, liste_objets_speciaux, images, load_assets
 import controller
 from objets import Fruit, Glacon, Bombe
 from interface import Bouton, dessiner_regles, dessiner_scores
+
+# ============================================================================
+# CLASSE : GestionnaireEcran
+# ============================================================================
+# Cette classe gère tout ce qui concerne l'affichage :
+# - Le redimensionnement de la fenêtre
+# - Le cache des fonds d'écran
+# - L'affichage des fonds selon le mode de jeu
+#
+# POURQUOI UNE CLASSE ?
+# - Regroupe les données (fonds, cache) et les actions (afficher, redimensionner)
+# - Évite les variables globales (plus propre, moins de bugs)
+# - Plus facile à comprendre : tout ce qui concerne l'écran est AU MÊME ENDROIT
+# ============================================================================
+
+class GestionnaireEcran:
+    """
+    Gère l'affichage des fonds d'écran avec mise en cache.
+    
+    Attributs:
+        fond_1j (Surface): Image de fond pour le mode 1 joueur
+        fond_2j_gauche (Surface): Image de fond pour J1 en mode 2 joueurs
+        fond_2j_droite (Surface): Image de fond pour J2 en mode 2 joueurs
+        cache_1j (Surface): Fond 1 joueur redimensionné (mis en cache)
+        cache_2j_gauche (Surface): Fond J1 redimensionné (mis en cache)
+        cache_2j_droite (Surface): Fond J2 redimensionné (mis en cache)
+        derniere_taille (tuple): Dernière taille d'écran connue (largeur, hauteur)
+    """
+    
+    def __init__(self):
+        """
+        Initialise le gestionnaire en chargeant les images de fond.
+        
+        Le constructeur (__init__) est appelé automatiquement quand on crée
+        un objet avec : gestionnaire = GestionnaireEcran()
+        """
+        # ====================================================================
+        # CHARGEMENT DES IMAGES DE FOND
+        # ====================================================================
+        try:
+            # Fond pour le joueur 1 en mode 2 joueurs (côté gauche)
+            self.fond_2j_gauche = pygame.image.load(
+                "Assets/Images/Backgrounds/Background1.png"
+            ).convert()
+            
+            # Fond pour le mode 1 joueur (plein écran)
+            self.fond_1j = pygame.image.load(
+                "Assets/Images/Backgrounds/Background2.png"
+            ).convert()
+            
+            # Fond pour le joueur 2 en mode 2 joueurs (côté droit)
+            self.fond_2j_droite = pygame.image.load(
+                "Assets/Images/Backgrounds/Background3.png"
+            ).convert()
+            
+            print("✅ Fonds d'écran chargés avec succès")
+            
+        except pygame.error as e:
+            # Si les images n'existent pas, on crée des fonds colorés de secours
+            print(f"⚠️ Erreur chargement fonds : {e}")
+            print("📝 Création de fonds de secours...")
+            
+            self.fond_2j_gauche = pygame.Surface((100, 100))
+            self.fond_2j_gauche.fill((100, 50, 50))  # Rouge sombre
+            
+            self.fond_1j = pygame.Surface((100, 100))
+            self.fond_1j.fill((50, 50, 100))  # Bleu sombre
+            
+            self.fond_2j_droite = pygame.Surface((100, 100))
+            self.fond_2j_droite.fill((50, 100, 50))  # Vert sombre
+        
+        # ====================================================================
+        # INITIALISATION DU CACHE
+        # ====================================================================
+        # Ces variables stockeront les fonds redimensionnés
+        # None = pas encore calculé
+        self.cache_1j = None
+        self.cache_2j_gauche = None
+        self.cache_2j_droite = None
+        
+        # Dernière taille d'écran connue (pour détecter les changements)
+        # (0, 0) = jamais calculé, forcera le premier calcul
+        self.derniere_taille = (0, 0)
+    
+    def mettre_a_jour_cache(self, largeur, hauteur):
+        """
+        Recalcule les fonds redimensionnés si la taille de l'écran a changé.
+        
+        EXPLICATION POUR LES DÉBUTANTS :
+        Cette méthode vérifie si l'écran a changé de taille.
+        Si oui, elle redimensionne tous les fonds et les stocke en cache.
+        Si non, elle ne fait rien (= optimisation !).
+        
+        Arguments:
+            largeur (int): Largeur actuelle de l'écran en pixels
+            hauteur (int): Hauteur actuelle de l'écran en pixels
+        
+        Retourne:
+            bool: True si le cache a été mis à jour, False sinon
+        """
+        taille_actuelle = (largeur, hauteur)
+        
+        # Si la taille n'a pas changé, on ne fait rien
+        if taille_actuelle == self.derniere_taille:
+            return False  # Pas de mise à jour nécessaire
+        
+        # La taille a changé ! On recalcule tout
+        print(f"🖼️ Redimensionnement des fonds pour {largeur}x{hauteur}")
+        
+        # Calcul du milieu (pour le mode 2 joueurs)
+        milieu_x = largeur // 2
+        
+        # Redimensionnement du fond mode 1 joueur (plein écran)
+        self.cache_1j = pygame.transform.scale(
+            self.fond_1j, 
+            (largeur, hauteur)
+        )
+        
+        # Redimensionnement du fond J1 (moitié gauche)
+        self.cache_2j_gauche = pygame.transform.scale(
+            self.fond_2j_gauche, 
+            (milieu_x, hauteur)
+        )
+        
+        # Redimensionnement du fond J2 (moitié droite)
+        # Note : largeur - milieu_x gère le cas où la largeur est impaire
+        self.cache_2j_droite = pygame.transform.scale(
+            self.fond_2j_droite, 
+            (largeur - milieu_x, hauteur)
+        )
+        
+        # Mémorise la taille actuelle pour la prochaine comparaison
+        self.derniere_taille = taille_actuelle
+        
+        return True  # Le cache a été mis à jour
+    
+    def afficher_fond(self, screen, nombre_de_joueurs, font_info):
+        """
+        Affiche le fond approprié selon le mode de jeu.
+        
+        Cette méthode :
+        1. Met à jour le cache si nécessaire
+        2. Affiche le bon fond selon qu'on est en mode 1 ou 2 joueurs
+        3. Affiche les labels des joueurs
+        
+        Arguments:
+            screen (Surface): L'écran Pygame sur lequel dessiner
+            nombre_de_joueurs (int): 1 ou 2
+            font_info (Font): Police pour les textes d'information
+        
+        Retourne:
+            int: La position X du milieu de l'écran (utile pour le reste du jeu)
+        """
+        largeur = screen.get_width()
+        hauteur = screen.get_height()
+        milieu_x = largeur // 2
+        
+        # Étape 1 : S'assurer que le cache est à jour
+        self.mettre_a_jour_cache(largeur, hauteur)
+        
+        # Étape 2 : Afficher le fond selon le mode
+        if nombre_de_joueurs == 1:
+            # ----------------------------------------------------------------
+            # MODE 1 JOUEUR : Fond plein écran
+            # ----------------------------------------------------------------
+            screen.blit(self.cache_1j, (0, 0))
+            
+            # Texte d'instruction centré en haut
+            txt_info = font_info.render("Clavier ou Souris", True, (255, 255, 255))
+            screen.blit(txt_info, (largeur // 2 - txt_info.get_width() // 2, 20))
+        
+        else:
+            # ----------------------------------------------------------------
+            # MODE 2 JOUEURS : Deux fonds côte à côte
+            # ----------------------------------------------------------------
+            # Fond gauche (Joueur 1)
+            screen.blit(self.cache_2j_gauche, (0, 0))
+            
+            # Fond droit (Joueur 2)
+            screen.blit(self.cache_2j_droite, (milieu_x, 0))
+            
+            # Ligne de séparation blanche
+            pygame.draw.line(
+                screen, 
+                (255, 255, 255),      # Couleur blanche
+                (milieu_x, 0),         # Point de départ (haut)
+                (milieu_x, hauteur),   # Point d'arrivée (bas)
+                3                      # Épaisseur en pixels
+            )
+            
+            # Labels des joueurs
+            txt_j1 = font_info.render("J1 (Clavier)", True, (255, 255, 255))
+            txt_j2 = font_info.render("J2 (Souris)", True, (255, 255, 255))
+            
+            # Centrage des labels dans chaque moitié
+            screen.blit(txt_j1, (milieu_x // 2 - txt_j1.get_width() // 2, 20))
+            screen.blit(txt_j2, (milieu_x + milieu_x // 2 - txt_j2.get_width() // 2, 20))
+        
+        # Retourne le milieu pour que le reste du code puisse l'utiliser
+        return milieu_x
 
 # INITIALISATION
 pygame.init()
@@ -14,16 +213,39 @@ pygame.display.set_caption("Fruit Slicer")
 clock = pygame.time.Clock()
 load_assets()
 
-# --- CHARGEMENT DES FONDS ---
-try:
-    fond_joueur1_de_2 = pygame.image.load("Assets/Images/Backgrounds/Background1.png").convert()
-    fond_joueur1 = pygame.image.load('Assets/Images/Backgrounds/Background2.png').convert()
-    fond_joueur2 = pygame.image.load("Assets/Images/Backgrounds/Background3.png").convert()
-except pygame.error:
-    # Fonds de secours
-    fond_joueur1_de_2 = pygame.Surface((100, 100)); fond_joueur1_de_2.fill((100, 50, 50)) 
-    fond_joueur1 = pygame.Surface((100, 100)); fond_joueur1.fill((50, 50, 100)) 
-    fond_joueur2 = pygame.Surface((100, 100)); fond_joueur2.fill((50, 50, 100)) 
+# Police pour le titre principal "FRUIT SLICER" (très grande)
+font_titre = pygame.font.Font(None, 80)
+
+# Police pour les informations générales (moyenne)
+font_info = pygame.font.Font(None, 40)
+
+# Police pour afficher les vies et le niveau (moyenne-grande)
+font_vies = pygame.font.Font(None, 50)
+
+# Police pour l'écran Game Over (grande)
+font_game_over = pygame.font.Font(None, 80)
+
+# Police pour les messages secondaires sur l'écran Game Over
+font_raison = pygame.font.Font(None, 40)
+
+# Police pour l'effet FREEZE (très grande pour être bien visible)
+font_freeze = pygame.font.Font(None, 120)
+
+# Police pour le timer du freeze
+font_timer = pygame.font.Font(None, 80)
+
+# Police pour le texte du décompte "Le jeu démarre dans"
+font_phrase = pygame.font.Font(None, 45)
+
+# Police pour les gros chiffres du décompte (3, 2, 1)
+font_chrono = pygame.font.Font(None, 150)
+
+# ============================================================================
+# CRÉATION DU GESTIONNAIRE D'ÉCRAN
+# ============================================================================
+# On crée UN SEUL objet qui gère tout l'affichage des fonds
+# ============================================================================
+gestionnaire_ecran = GestionnaireEcran()
 
 # --- ETAT DU JEU ---
 etat_jeu = "menu" 
@@ -122,6 +344,8 @@ while running:
                 # Réinitialisation des DEUX joueurs
                 vies_j1 = 3
                 vies_j2 = 3
+                # Réinitialision du score
+                score = 0
                 start_ticks = pygame.time.get_ticks()
                 
                 # Reset du freeze
@@ -171,7 +395,6 @@ while running:
     
     if etat_jeu == "menu":
         screen.fill((30, 30, 40))
-        font_titre = pygame.font.Font(None, 80)
         titre = font_titre.render("FRUIT SLICER", True, (255, 100, 100))
         screen.blit(titre, (screen.get_width()//2 - titre.get_width()//2, 50))
         bouton_1j.dessiner(screen)
@@ -194,14 +417,11 @@ while running:
         screen.fill((20, 0, 0)) # Fond rouge sombre général
     
         milieu_x = screen.get_width() // 2
-        
-        font_go = pygame.font.Font(None, 80)
-        font_raison = pygame.font.Font(None, 40)  # Défini ici pour les deux cas
     
         if is_bomb_exploded:
             # Affichage centré pour bombe explosée
-            txt_go = font_go.render("GAME OVER", True, (255, 0, 0))
-            txt_boom = font_go.render("💥 BOOM !", True, (255, 255, 0))
+            txt_go = font_game_over.render("GAME OVER", True, (255, 0, 0))
+            txt_boom = font_game_over.render("💥 BOOM !", True, (255, 255, 0))
             txt_egalite = font_raison.render("Égalité ! Les deux joueurs ont perdu simultanément.", True, (200, 200, 200))
             
             screen.blit(txt_go, (screen.get_width()//2 - txt_go.get_width()//2, screen.get_height()//2 - 100))
@@ -212,9 +432,9 @@ while running:
             if nombre_de_joueurs == 2:
                 pygame.draw.line(screen, (100, 0, 0), (milieu_x, 0), (milieu_x, screen.get_height()), 2)
             
-            txt_go = font_go.render("GAME OVER", True, (255, 0, 0))
+            txt_go = font_game_over.render("GAME OVER", True, (255, 0, 0))
             txt_perdu = font_raison.render("Vous avez perdu !", True, (200, 200, 200))
-            txt_gagne = font_go.render("VAINQUEUR !", True, (0, 255, 0))
+            txt_gagne = font_game_over.render("VAINQUEUR !", True, (0, 255, 0))
 
             if nombre_de_joueurs == 1:
                 # Affichage classique centré
@@ -320,27 +540,10 @@ while running:
                 compteur = 0
                 frequence_lancer = random.randint(min_freq, max_freq)
 
-        # --- AFFICHAGE FONDS ---
+        # --- DESSIN ---
         largeur_ecran = screen.get_width()
         hauteur_ecran = screen.get_height()
-        milieu_x = largeur_ecran // 2
-        font_info = pygame.font.Font(None, 40)
-
-        if nombre_de_joueurs == 1:
-            bg_scaled = pygame.transform.scale(fond_joueur1, (largeur_ecran, hauteur_ecran))
-            screen.blit(bg_scaled, (0, 0))
-            txt_info = font_info.render("Clavier ou Souris", True, (255, 255, 255))
-            screen.blit(txt_info, (largeur_ecran//2 - txt_info.get_width()//2, 20))
-        else:
-            bg_left = pygame.transform.scale(fond_joueur1_de_2, (milieu_x, hauteur_ecran))
-            screen.blit(bg_left, (0, 0))
-            bg_right = pygame.transform.scale(fond_joueur2, (milieu_x, hauteur_ecran))
-            screen.blit(bg_right, (milieu_x, 0))
-            pygame.draw.line(screen, (255, 255, 255), (milieu_x, 0), (milieu_x, hauteur_ecran), 3)
-            t1 = font_info.render("J1 (Clavier)", True, (255, 255, 255))
-            t2 = font_info.render("J2 (Souris)", True, (255, 255, 255))
-            screen.blit(t1, (milieu_x//2 - t1.get_width()//2, 20))
-            screen.blit(t2, (milieu_x + milieu_x//2 - t2.get_width()//2, 20))
+        milieu_x = gestionnaire_ecran.afficher_fond(screen, nombre_de_joueurs, font_info)
 
         # --- GESTION FRUITS ET VIES SÉPARÉES ---
         for f in mes_fruits[:]:
@@ -379,7 +582,6 @@ while running:
             controller.draw_slice(screen)
 
         # --- AFFICHAGE DES VIES (HUD) ---
-        font_vies = pygame.font.Font(None, 50)
         
         if nombre_de_joueurs == 1:
             txt_vies = font_vies.render(f"VIES : {vies_j1}", True, (255, 0, 0))
@@ -404,11 +606,9 @@ while running:
             screen.blit(overlay, (0, 0))
             
             # Message "FREEZE" avec temps restant
-            font_freeze = pygame.font.Font(None, 120)
             temps_restant = freeze_timer / 60  # Conversion frames -> secondes
             txt_freeze = font_freeze.render(f"❄️ FREEZE", True, (0, 255, 255))
             
-            font_timer = pygame.font.Font(None, 80)
             txt_timer = font_timer.render(f"{temps_restant:.1f}s", True, (255, 255, 255))
             
             # Effet de clignotement pour le message
@@ -421,8 +621,6 @@ while running:
         # --- DÉCOMPTE DÉBUT DE JEU ---
         if en_attente:
             chiffre = int(4 - seconds_ecoules)
-            font_phrase = pygame.font.Font(None, 45)
-            font_chrono = pygame.font.Font(None, 150)
             
             surf_phrase = font_phrase.render("Le jeu démarre dans", True, (255, 255, 255))
             surf_chrono = font_chrono.render(str(chiffre), True, (255, 215, 0))
