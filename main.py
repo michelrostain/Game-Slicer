@@ -285,6 +285,9 @@ COULEURS = {
     "hud_vies": (192, 57, 43),  # Rouge pomme
     "hud_niveau": (230, 126, 34),  # Orange
     "hud_score": (139, 69, 19),  # Marron
+    "vies": (192, 57, 43),  # Rouge pomme
+    "niveau": (230, 126, 34),  # Orange
+    "score": (139, 69, 19),  # Marron
     # Décompte
     "decompte_texte": (85, 107, 47),  # Vert olive
     "decompte_chiffre": (255, 140, 0),  # Orange vif
@@ -434,6 +437,7 @@ while running:
 
     # 0. RE-CENTRAGE DYNAMIQUE
     largeur_actuelle = screen.get_width()
+    hauteur_actuelle = screen.get_height()
     centre_x = largeur_actuelle // 2
 
     bouton_1j.rect.centerx = centre_x
@@ -442,7 +446,7 @@ while running:
     bouton_scores.rect.centerx = centre_x
     bouton_quitter.rect.centerx = centre_x
     bouton_menu_go.rect.centerx = centre_x
-    bouton_menu_go.rect.y = screen.get_height() // 2 + 120
+    bouton_menu_go.rect.y = hauteur_actuelle - 100
 
     # 1. GESTION DES ÉVÉNEMENTS
     events = pygame.event.get()
@@ -584,17 +588,17 @@ while running:
                             freeze_en_attente = True
                             freeze_delai_timer = FREEZE_DELAI_FRAMES
 
-                        elif result == "freeze_j1":
-                            # Freeze pour joueur 1 seulement
-                            if not freeze_j1_actif and not freeze_j1_en_attente:
-                                freeze_j1_en_attente = True
-                                freeze_j1_delai_timer = FREEZE_DELAI_FRAMES
+                    elif result == "freeze_j1":
+                        # Freeze pour joueur 1 seulement
+                        if not freeze_j1_actif and not freeze_j1_en_attente:
+                            freeze_j1_en_attente = True
+                            freeze_j1_delai_timer = FREEZE_DELAI_FRAMES
 
-                        elif result == "freeze_j2":
-                            # Freeze pour joueur 2 seulement
-                            if not freeze_j2_actif and not freeze_j2_en_attente:
-                                freeze_j2_en_attente = True
-                                freeze_j2_delai_timer = FREEZE_DELAI_FRAMES
+                    elif result == "freeze_j2":
+                        # Freeze pour joueur 2 seulement
+                        if not freeze_j2_actif and not freeze_j2_en_attente:
+                            freeze_j2_en_attente = True
+                            freeze_j2_delai_timer = FREEZE_DELAI_FRAMES
                     elif isinstance(result, int) and result > 0:
                         # Score du clavier (mode 1 joueur)
                         if nombre_de_joueurs == 1:
@@ -779,7 +783,6 @@ while running:
                 )
 
         # Repositionner le bouton plus bas
-        bouton_menu_go.rect.y = hauteur_ecran - 100
         bouton_menu_go.dessiner(screen)
 
     # --- ÉCRAN DE JEU ---
