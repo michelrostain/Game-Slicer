@@ -55,6 +55,18 @@
             "niveau": 1,
             "date": "2026-02-01 18:22:00",
             "duree_secondes": 21.571
+        },
+        {
+            "score": 4,
+            "niveau": 1,
+            "date": "2026-02-01 18:48:01",
+            "duree_secondes": 15.045000000000002
+        },
+        {
+            "score": 2,
+            "niveau": 1,
+            "date": "2026-02-01 23:00:04",
+            "duree_secondes": 12.445
         }
     ],
     "historique_2j": [

@@ -397,6 +397,7 @@ bouton_menu_go = Bouton(
 
 # Variables de jeu
 mes_fruits = []
+morceaux_fruits = []
 frequence_lancer = random.randint(30, 100)
 compteur = 0
 running = True
@@ -466,6 +467,7 @@ while running:
                 nombre_de_joueurs = 1
                 etat_jeu = "jeu"
                 mes_fruits = []
+                morceaux_fruits = []
                 # Réinitialisation
                 vies_j1 = 3
                 start_ticks = pygame.time.get_ticks()
@@ -489,6 +491,7 @@ while running:
                 nombre_de_joueurs = 2
                 etat_jeu = "jeu"
                 mes_fruits = []
+                morceaux_fruits = []
                 # Réinitialisation des DEUX joueurs
                 vies_j1 = 3
                 vies_j2 = 3
@@ -539,6 +542,7 @@ while running:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 etat_jeu = "menu"
                 mes_fruits = []
+                morceaux_fruits = []
                 son_decompte.stop()
 
             seconds_ecoules = (pygame.time.get_ticks() - start_ticks) / 1000
@@ -572,6 +576,7 @@ while running:
                         screen.get_height(),
                         event.key,
                         nombre_de_joueurs,
+                        morceaux_fruits
                     )
                     if result == "game_over":
                         if nombre_de_joueurs == 1:
@@ -858,6 +863,7 @@ while running:
                     mes_fruits,
                     screen.get_width(),
                     nombre_de_joueurs,
+                    morceaux_fruits
                 )
 
                 # --- TRAITEMENT DU RÉSULTAT ---
@@ -983,6 +989,7 @@ while running:
                     else:
                         if not freeze_j2_actif:
                             f.update(screen.get_width())
+            # Dessine le fruit
             f.draw(screen)
 
             # --- DÉTECTION FRUIT RATÉ ---
@@ -1044,6 +1051,24 @@ while running:
                                 0, 1, duree_partie, mode="2j", gagnant=gagnant
                             )
                             etat_jeu = "game_over"
+
+        # ====================================================================
+        # GESTION DES MORCEAUX DE FRUITS (NOUVEAU)
+        # ====================================================================
+        # Cette section gère les morceaux créés quand un fruit est tranché.
+        # Les morceaux ont leur propre physique (séparation, rotation, fade out).
+        # ====================================================================
+        
+        # Mise à jour de chaque morceau (physique + fade out)
+        for morceau in morceaux_fruits:
+            morceau.update()
+        
+        # Suppression des morceaux qui ont fini leur animation
+        morceaux_fruits = [m for m in morceaux_fruits if not m.est_termine()]
+        
+        # Affichage de chaque morceau
+        for morceau in morceaux_fruits:
+            morceau.draw(screen)
 
         if not en_attente:
             controller.draw_slice(screen)

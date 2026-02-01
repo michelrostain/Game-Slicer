@@ -28,3 +28,6 @@ Thumbs.db
 # Variables d'environnement
 .env
 .env.local
+
+# Fichier Json
+*.json

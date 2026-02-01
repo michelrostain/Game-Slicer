@@ -1,6 +1,6 @@
 import pygame
 import math
-from objets import Glacon, Bombe
+from objets import Fruit, Glacon, Bombe, MorceauFruit
 
 # Variables pour le slicing à la souris
 slicing = False
@@ -45,7 +45,7 @@ def start_slice(mouse_pos):
     combo_actuel = 0
 
 
-def update_slice(mouse_pos, mes_fruits, screen_width, nombre_de_joueurs=1):
+def update_slice(mouse_pos, mes_fruits, screen_width, nombre_de_joueurs=1, morceaux_fruits=None):
     """
     :Param: Met à jour la traînée ET vérifie les collisions en temps réel (sous le curseur)
 
@@ -54,7 +54,7 @@ def update_slice(mouse_pos, mes_fruits, screen_width, nombre_de_joueurs=1):
         mes_fruits (list): Liste des fruits actuellement à l'écran
         screen_width (int): Largeur de l'écran (pour gérer les 2 joueurs)
         nombre_de_joueurs (int): Nombre de joueurs (1 ou 2)
-
+        morceaux_fruits (list): Liste pour stocker les morceaux de fruits créés lors de la coupe
     Retourne:
         str: "freeze" si un glaçon a été tranché
         str: "game_over" si une bombe a été tranchée
@@ -141,24 +141,53 @@ def update_slice(mouse_pos, mes_fruits, screen_width, nombre_de_joueurs=1):
                     return "game_over"
 
                 # ============================================================
-                # CAS 3 : C'est un FRUIT (normal)
+                # CAS 3 : C'est un FRUIT (normal) - MODIFIÉ POUR LES MORCEAUX
                 # ============================================================
 
                 # Incrémente le compteur de combo
                 combo_actuel += 1
 
-                # Si le fruit a des états (images différentes selon l'état)
-                if fruit.images_set:
-                    fruit.couper()  # Change l'image vers "cut"
-                    # Le fruit reste à l'écran et continue de tomber
-                else:
-                    # Fruit simple : on le supprime directement
-                    mes_fruits.remove(fruit)
+                # Appelle la méthode couper() qui retourne les infos pour les morceaux
+                infos_coupe = fruit.couper()
 
-                print(f"🍎 Fruit tranché ! Combo actuel : {combo_actuel}")
+                # Si on a les infos ET une liste pour stocker les morceaux
+                if infos_coupe and morceaux_fruits is not None:
+                    # --------------------------------------------------------
+                    # CRÉATION DES 2 MORCEAUX DE FRUIT
+                    # --------------------------------------------------------
+                    # On crée 2 objets MorceauFruit à partir des infos retournées
+                    # par fruit.couper(). Les 2 morceaux partent de la même position mais dans des directions opposées.
+                    
+                    # Morceau GAUCHE : part vers la gauche avec rotation anti-horaire
+                    morceau_gauche = MorceauFruit(
+                        x=infos_coupe["x"],
+                        y=infos_coupe["y"],
+                        image=infos_coupe["image"],
+                        direction="gauche"
+                    )
+                    
+                    # Morceau DROIT : part vers la droite avec rotation horaire
+                    # L'image sera automatiquement inversée (miroir) dans le constructeur
+                    morceau_droite = MorceauFruit(
+                        x=infos_coupe["x"],
+                        y=infos_coupe["y"],
+                        image=infos_coupe["image"],
+                        direction="droite"
+                    )
+                    
+                    # Ajout des 2 morceaux à la liste
+                    morceaux_fruits.append(morceau_gauche)
+                    morceaux_fruits.append(morceau_droite)
+                    
+                    print(f"🍎 Fruit tranché en 2 morceaux ! Combo actuel : {combo_actuel}")
+                else:
+                    print(f"🍎 Fruit tranché ! Combo actuel : {combo_actuel}")
+
+                # Supprime le fruit original de la liste
+                # (il est remplacé par les 2 morceaux)
+                mes_fruits.remove(fruit)
 
                 # Retourne 1 pour signaler qu'un fruit a été tranché
-                # (le calcul du score avec bonus se fait dans end_slice)
                 return 1
 
     # Aucune collision détectée
@@ -214,7 +243,7 @@ def end_slice(mes_fruits, screen_width=None, nombre_de_joueurs=1):
 
 
 def handle_keyboard_inputs(
-    mes_fruits, screen_width, screen_height, key, nombre_de_joueurs=1
+    mes_fruits, screen_width, screen_height, key, nombre_de_joueurs=1, morceaux_fruits=None
 ):
     """
     :Param: Gère les entrées clavier pour le joueur 1 (ZSDE) en mode 2 joueurs.
@@ -238,7 +267,7 @@ def handle_keyboard_inputs(
         screen_height (int): Hauteur de l'écran
         key (int): Touche appuyée (pygame.K_*)
         nombre_de_joueurs (int): Nombre de joueurs (1 ou 2)
-
+        morceaux_fruits (list): Liste pour stocker les morceaux de fruits coupés
     Retourne:
         str: "freeze" si un glaçon a été tranché
         str: "game_over" si une bombe a été tranchée
@@ -311,16 +340,37 @@ def handle_keyboard_inputs(
                     bonus_active = "freeze"
 
             # ================================================================
-            # CAS FRUIT NORMAL
+            # CAS FRUIT NORMAL - MODIFIÉ POUR LES MORCEAUX
             # ================================================================
-            elif not fruit.sliced:  # Vérifie qu'il n'est pas déjà tranché
+            elif not fruit.sliced:
 
-                # Si le fruit a des états visuels (comme la poire)
-                if fruit.images_set:
-                    fruit.couper()  # Change l'image vers "cut"
-                else:
-                    mes_fruits.remove(fruit)  # Supprime le fruit simple
+                # Appelle la méthode couper() qui retourne les infos pour les morceaux
+                infos_coupe = fruit.couper()
 
+                # Si on a les infos ET une liste pour stocker les morceaux
+                if infos_coupe and morceaux_fruits is not None:
+                    # --------------------------------------------------------
+                    # CRÉATION DES 2 MORCEAUX DE FRUIT
+                    # --------------------------------------------------------
+                    morceau_gauche = MorceauFruit(
+                        x=infos_coupe["x"],
+                        y=infos_coupe["y"],
+                        image=infos_coupe["image"],
+                        direction="gauche"
+                    )
+                    
+                    morceau_droite = MorceauFruit(
+                        x=infos_coupe["x"],
+                        y=infos_coupe["y"],
+                        image=infos_coupe["image"],
+                        direction="droite"
+                    )
+                    
+                    morceaux_fruits.append(morceau_gauche)
+                    morceaux_fruits.append(morceau_droite)
+    
+                # Supprime le fruit original de la liste
+                mes_fruits.remove(fruit)
                 fruits_tranches += 1
 
     # ========================================================================
