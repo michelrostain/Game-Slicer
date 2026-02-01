@@ -1,0 +1,97 @@
+{
+    "historique": [
+        {
+            "score": 7,
+            "niveau": 1,
+            "date": "2026-02-01T15:40:11.952261",
+            "duree_secondes": 19.956
+        },
+        {
+            "score": 17,
+            "niveau": 2,
+            "date": "2026-02-01T16:28:18.339232",
+            "duree_secondes": 43.136
+        }
+    ],
+    "historique_1j": [
+        {
+            "score": 12,
+            "niveau": 2,
+            "date": "2026-02-01 17:18:10",
+            "duree_secondes": 37.398
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-01 17:20:36",
+            "duree_secondes": 2.314
+        },
+        {
+            "score": 14,
+            "niveau": 2,
+            "date": "2026-02-01 18:09:06",
+            "duree_secondes": 43.101
+        },
+        {
+            "score": 2,
+            "niveau": 1,
+            "date": "2026-02-01 18:09:22",
+            "duree_secondes": 5.773999999999999
+        },
+        {
+            "score": 2,
+            "niveau": 1,
+            "date": "2026-02-01 18:17:00",
+            "duree_secondes": 3.7329999999999997
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-01 18:21:30",
+            "duree_secondes": 2.088
+        },
+        {
+            "score": 6,
+            "niveau": 1,
+            "date": "2026-02-01 18:22:00",
+            "duree_secondes": 21.571
+        }
+    ],
+    "historique_2j": [
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-01 17:19:56",
+            "duree_secondes": 18.404,
+            "gagnant": "J2"
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-01 17:20:17",
+            "duree_secondes": 10.105,
+            "gagnant": "J2"
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-01 17:45:21",
+            "duree_secondes": 9.834,
+            "gagnant": "J2"
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-01 17:56:52",
+            "duree_secondes": 3.8019999999999996,
+            "gagnant": "J2"
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-01 18:22:24",
+            "duree_secondes": 6.032,
+            "gagnant": "J2"
+        }
+    ]
+}
