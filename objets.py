@@ -164,12 +164,46 @@ class Fruit:
                     self.speed_x *= -1
 
     def couper(self):
-        # Méthode appelée lorsque le fruit est tranché
+        """
+        Méthode appelée lorsque le fruit est tranché par le joueur.
+        
+        CHANGEMENT PAR RAPPORT À L'ANCIENNE VERSION :
+        Avant : Cette méthode changeait simplement l'image du fruit vers "cut"
+        Maintenant : Elle retourne les informations nécessaires pour créer 2 morceaux séparés (objets MorceauFruit)
+        
+        Le fruit original sera supprimé de la liste mes_fruits par le controller,
+        et 2 nouveaux MorceauFruit seront créés à la place.
+        
+        Returns:
+            dict: Dictionnaire contenant les infos pour créer les morceaux
+                - "x": position X du fruit au moment de la coupe
+                - "y": position Y du fruit au moment de la coupe  
+                - "image": l'image "cut" du fruit (moitié)
+                
+            None: Si le fruit n'a pas d'image "cut" disponible
+        
+        Exemple de retour:
+            {
+                "x": 450.5,
+                "y": 320.0,
+                "image": <Surface 80x80>
+            }
+        """
+        # Marque le fruit comme tranché (empêche de le couper à nouveau)
         self.sliced = True
-        # Changement d'image si le fruit a des états (ex: poire coupée)
-        if self.images_set:
-            self.image = self.images_set.get("cut", self.image)
-            self.speed_y = -5  # Petit saut visuel vers le haut après la coupe
+
+        # Vérifie si le fruit a un ensemble d'images (avec une version "cut")
+        if self.images_set and "cut" in self.images_set:
+            # Retourne les informations nécessaires pour créer les 2 morceaux
+            return {
+                "x": self.x,           # Position X actuelle du fruit
+                "y": self.y,           # Position Y actuelle du fruit
+                "image": self.images_set["cut"]  # Image de la moitié de fruit
+            }
+        
+        # Si pas d'image "cut", retourne None
+        # Dans ce cas, le controller supprimera simplement le fruit
+        return None
 
     def draw(self, screen):
         # Affichage du fruit sur l'écran
@@ -357,3 +391,226 @@ class Bombe:
     def couper(self):
         """Méthode appelée quand la bombe est tranchée"""
         self.sliced = True
+
+class MorceauFruit:
+    """
+    Représente un morceau de fruit après tranchage.
+    
+    Attributs:
+        x, y (float): Position du morceau sur l'écran
+        image (Surface): Image du morceau (moitié de fruit)
+        alpha (int): Opacité actuelle (255 = opaque, 0 = invisible)
+        speed_x, speed_y (float): Vitesses horizontale et verticale
+        gravity (float): Force de gravité appliquée
+        angle (float): Angle de rotation actuel en degrés
+        rotation_speed (float): Vitesse de rotation en degrés par frame
+        fade_speed (int): Vitesse de disparition (réduction d'alpha par frame)
+    """
+
+    def __init__(self, x, y, image, direction="gauche"):
+        """
+        Crée un nouveau morceau de fruit.
+        
+        Args:
+            x (float): Position X initiale (position du fruit au moment de la coupe)
+            y (float): Position Y initiale (position du fruit au moment de la coupe)
+            image (Surface): Image du fruit coupé (sera inversée si direction="droite")
+            direction (str): "gauche" ou "droite" - détermine le sens de déplacement
+        
+        Exemple d'utilisation:
+            # Quand un fruit est coupé, on crée 2 morceaux :
+            morceau_gauche = MorceauFruit(fruit.x, fruit.y, image_cut, "gauche")
+            morceau_droite = MorceauFruit(fruit.x, fruit.y, image_cut, "droite")
+        """
+        
+        # Les 2 morceaux démarrent au même endroit (là où était le fruit)
+        self.x = x
+        self.y = y
+
+        # ====================================================================
+        # GESTION DE L'IMAGE SELON LA DIRECTION
+        # ====================================================================
+        # Pour le morceau GAUCHE : on garde l'image telle quelle
+        # Pour le morceau DROIT : on inverse l'image horizontalement (miroir)
+        # Cela donne l'illusion de 2 moitiés différentes !
+        #
+        # pygame.transform.flip(image, flip_x, flip_y)
+        #   - flip_x = True  → inverse horizontalement (effet miroir)
+        #   - flip_y = False → pas d'inversion verticale
+        if direction == "gauche":
+            self.image = image
+        else:
+            # Crée une copie inversée horizontalement pour le morceau droit
+            self.image = pygame.transform.flip(image, True, False)
+
+        # ====================================================================
+        # OPACITÉ POUR L'EFFET FADE OUT
+        # ====================================================================
+        # L'alpha va de 255 (totalement visible) à 0 (invisible)
+        # On le diminue progressivement à chaque frame
+        self.alpha = 255
+
+        # ====================================================================
+        # PHYSIQUE DU MORCEAU - VITESSES
+        # ====================================================================
+        # Les vitesses sont OPPOSÉES selon la direction pour créer l'effet
+        # de séparation (les 2 morceaux s'écartent l'un de l'autre)
+        #
+        # random.uniform(a, b) retourne un nombre décimal aléatoire entre a et b
+        # Cela ajoute de la variété à chaque coupe !
+        if direction == "gauche":
+            # Morceau gauche : va vers la GAUCHE (vitesse X négative)
+            self.speed_x = random.uniform(-6, -3)
+            # Rotation dans le sens anti-horaire (négatif)
+            self.rotation_speed = random.uniform(-8, -4)
+        else:
+            # Morceau droit : va vers la DROITE (vitesse X positive)
+            self.speed_x = random.uniform(3, 6)
+            # Rotation dans le sens horaire (positif)
+            self.rotation_speed = random.uniform(4, 8)
+
+        # Vitesse verticale initiale : légèrement vers le HAUT
+        # Cela crée un petit "saut" avant que la gravité ne fasse retomber le morceau
+        # Valeur négative = vers le haut (en pygame, Y augmente vers le bas)
+        self.speed_y = random.uniform(-10, -5)
+
+        # ====================================================================
+        # PHYSIQUE DU MORCEAU - GRAVITÉ
+        # ====================================================================
+        # La gravité est ajoutée à speed_y à chaque frame
+        # Plus la valeur est grande, plus le morceau tombe vite
+        self.gravity = 0.6
+
+        # ====================================================================
+        # ROTATION
+        # ====================================================================
+        # L'angle de rotation commence à 0° et change à chaque frame
+        # selon rotation_speed (défini ci-dessus selon la direction)
+        self.angle = 0
+
+        # ====================================================================
+        # VITESSE DE DISPARITION (FADE OUT)
+        # ====================================================================
+        # À chaque frame, on soustrait fade_speed à alpha
+        # Avec alpha=255 et fade_speed=6, le morceau disparaît en ~42 frames
+        # À 60 FPS, cela fait environ 0.7 secondes
+        # 
+        # on peut ajuster cette valeur :
+        #   - Plus grand (ex: 10) = disparition plus rapide
+        #   - Plus petit (ex: 3) = disparition plus lente
+        self.fade_speed = 6
+
+    def update(self):
+        """
+        Met à jour la physique du morceau à chaque frame.
+        
+        Cette méthode doit être appelée une fois par frame dans la boucle
+        principale du jeu. Elle gère :
+            1. La gravité (le morceau accélère vers le bas)
+            2. Le déplacement (position mise à jour selon les vitesses)
+            3. La rotation (l'angle augmente/diminue)
+            4. Le fade out (l'opacité diminue progressivement)
+        
+        Note: Pas besoin de passer de paramètres, tout est géré en interne.
+        """
+        # ====================================================================
+        # ÉTAPE 1 : APPLIQUER LA GRAVITÉ
+        # ====================================================================
+        # On ajoute la gravité à la vitesse verticale
+        # Cela simule l'accélération de la chute (comme dans la vraie vie !)
+        # Chaque frame, le morceau tombe un peu plus vite
+        self.speed_y += self.gravity
+
+        # ====================================================================
+        # ÉTAPE 2 : METTRE À JOUR LA POSITION
+        # ====================================================================
+        # On déplace le morceau selon ses vitesses actuelles
+        # speed_x déplace horizontalement (gauche/droite)
+        # speed_y déplace verticalement (haut/bas)
+        self.x += self.speed_x
+        self.y += self.speed_y
+
+        # ====================================================================
+        # ÉTAPE 3 : METTRE À JOUR LA ROTATION
+        # ====================================================================
+        # On ajoute la vitesse de rotation à l'angle actuel
+        # Le morceau tourne continuellement sur lui-même
+        self.angle += self.rotation_speed
+
+        # ====================================================================
+        # ÉTAPE 4 : APPLIQUER LE FADE OUT
+        # ====================================================================
+        # On diminue l'opacité progressivement
+        # max(0, ...) empêche alpha de devenir négatif
+        # Une fois à 0, le morceau est complètement invisible
+        self.alpha = max(0, self.alpha - self.fade_speed)
+
+    def draw(self, screen):
+        """
+        Dessine le morceau sur l'écran avec rotation et transparence.
+        
+        Cette méthode doit être appelée une fois par frame, APRÈS update().
+        Elle gère :
+            1. La rotation de l'image
+            2. L'application de la transparence (alpha)
+            3. Le centrage correct de l'image
+        
+        Args:
+            screen (Surface): L'écran pygame sur lequel dessiner
+        
+        Note: Si alpha <= 0, rien n'est dessiné (optimisation)
+        """
+        # Si le morceau est complètement invisible, on ne dessine rien
+        # Cela évite des calculs inutiles
+        if self.alpha <= 0:
+            return
+
+        # ====================================================================
+        # ÉTAPE 1 : ROTATION DE L'IMAGE
+        # ====================================================================
+        # pygame.transform.rotate(image, angle) retourne une NOUVELLE image
+        # tournée de 'angle' degrés dans le sens anti-horaire
+        # 
+        # ATTENTION : La rotation change la taille de l'image !
+        # Une image 100x100 tournée de 45° devient ~141x141
+        # C'est pour ça qu'on recalcule le rect après
+        image_tournee = pygame.transform.rotate(self.image, self.angle)
+
+        # ====================================================================
+        # ÉTAPE 2 : APPLICATION DE LA TRANSPARENCE
+        # ====================================================================
+        # Pour appliquer l'alpha à une image, on doit d'abord la convertir
+        # avec convert_alpha() pour supporter la transparence par pixel
+        #
+        # IMPORTANT : On crée une copie pour ne pas modifier l'original
+        # car set_alpha() modifie l'image en place
+        image_avec_alpha = image_tournee.copy()
+        image_avec_alpha.set_alpha(self.alpha)
+
+        # ====================================================================
+        # ÉTAPE 3 : CENTRAGE ET AFFICHAGE
+        # ====================================================================
+        # On récupère le rectangle de l'image et on le centre sur (x, y)
+        # Cela garantit que la rotation se fait autour du centre du morceau
+        # (sinon l'image "sauterait" à chaque changement d'angle)
+        rect = image_avec_alpha.get_rect(center=(int(self.x), int(self.y)))
+
+        # On dessine l'image sur l'écran à la position calculée
+        screen.blit(image_avec_alpha, rect)
+
+    def est_termine(self):
+        """
+        Vérifie si le morceau doit être supprimé.
+        
+        Un morceau est considéré comme "terminé" quand il est devenu
+        complètement invisible (alpha <= 0). À ce moment, il peut être
+        retiré de la liste des morceaux pour libérer de la mémoire.
+        
+        Returns:
+            bool: True si le morceau est invisible et doit être supprimé, False sinon
+        
+        Exemple d'utilisation dans la boucle principale:
+            # Supprimer les morceaux terminés
+            morceaux_fruits = [m for m in morceaux_fruits if not m.est_termine()]
+        """
+        return self.alpha <= 0
