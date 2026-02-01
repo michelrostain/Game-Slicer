@@ -302,8 +302,13 @@ def handle_keyboard_inputs(
             # ================================================================
             elif isinstance(fruit, Glacon) or fruit.type == "ice":
                 mes_fruits.remove(fruit)
-                print("[J1 CLAVIER] Glaçon tranché ! Temps gelé !")
-                bonus_active = "freeze"
+                # En mode 2 joueurs, le clavier = Joueur 1
+                if nombre_de_joueurs == 2:
+                    print("[J1 CLAVIER] Glaçon tranché ! Freeze J1 !")
+                    bonus_active = "freeze_j1"
+                else:
+                    print("[J1 CLAVIER] Glaçon tranché ! Temps gelé !")
+                    bonus_active = "freeze"
 
             # ================================================================
             # CAS FRUIT NORMAL

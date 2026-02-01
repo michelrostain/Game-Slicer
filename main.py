@@ -878,6 +878,20 @@ while running:
                         freeze_en_attente = True
                         freeze_delai_timer = FREEZE_DELAI_FRAMES  # 2 secondes de délai
                         print("Glaçon tranché ! Freeze différé activé.")
+                        
+                elif result == "freeze_j1":
+                    # Freeze pour joueur 1 seulement
+                    if not freeze_j1_actif and not freeze_j1_en_attente:
+                        freeze_j1_en_attente = True
+                        freeze_j1_delai_timer = FREEZE_DELAI_FRAMES  # 2 secondes de délai
+                        print("Glaçon tranché J1 ! Freeze différé J1 activé.")
+                
+                elif result == "freeze_j2":
+                    # Freeze pour joueur 2 seulement
+                    if not freeze_j2_actif and not freeze_j2_en_attente:
+                        freeze_j2_en_attente = True
+                        freeze_j2_delai_timer = FREEZE_DELAI_FRAMES  # 2 secondes de délai
+                        print("Glaçon tranché J2 ! Freeze différé J2 activé.")
 
                 elif isinstance(result, int) and result > 0:
                     pass
