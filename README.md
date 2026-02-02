@@ -169,7 +169,8 @@ Ce projet a été développé par :
 | Contributeur | GitHub |
 |--------------|--------|
 | **Michel Rostain** | [@michelrostain](https://github.com/michelrostain) |
-| **Manon Sigaud** | [@Manonsigilla](https://github.com/Manonsigilla) |
+| **Manon Sigaud** | [@Manonsigilla](https://github.com/Manonsigilla) 
+| **Ahamada Assmine** | [@AAssmine](https://github.com/AAssmine) 
 
 ## 📜 Licence
 
