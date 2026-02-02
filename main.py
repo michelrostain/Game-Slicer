@@ -1,15 +1,15 @@
 import pygame, random
-from constantes import liste_fruits, liste_objets_speciaux, images, load_assets
+from constantes import liste_fruits, liste_objets_speciaux, load_assets
 import controller
 from objets import Fruit, Glacon, Bombe, ParticuleExplosion, ParticuleGlace
 from interface import Bouton, dessiner_regles, dessiner_scores
 from scores import (
     creer_fichier_scores_si_absent,
-    charger_scores,
     sauvegarder_score,
     reinitialiser_scores,
-    est_nouveau_record,
-    est_dans_classement,
+    charger_scores,
+    obtenir_statistiques,
+    est_nouveau_record
 )
 
 # ============================================================================
@@ -320,6 +320,7 @@ score_sauvegarde = False
 explosion_en_cours = False
 explosion_timer = 0
 EXPLOSION_DUREE = 60  # Durée de l'animation en frames
+is_bomb_exploded = False
 
 # ============================================================================
 # CRÉATION DES BOUTONS (couleurs harmonisées thème nature/fruits)
@@ -468,6 +469,30 @@ except (pygame.error, FileNotFoundError):
     print("Son manquant, création d'un son vide.")
     son_win = pygame.mixer.Sound(buffer=bytearray())
     
+def mettre_a_jour_score_et_niveau(points_gagnes):
+    """
+    Met à jour le score et vérifie si le joueur monte de niveau.
+    
+    Args:
+        points_gagnes (int): Nombre de points à ajouter
+    
+    Returns:
+        bool: True si le joueur a monté de niveau, False sinon
+    """
+    global score, niveau, gravite_actuelle
+    
+    score += points_gagnes
+    
+    # Vérifier montée de niveau tous les 10 points
+    nouveau_niveau = (score // 10) + 1
+    if nouveau_niveau > niveau:
+        niveau = nouveau_niveau
+        gravite_actuelle = min(0.4 + (niveau - 1) * 0.03, 1.0)
+        print(f"🎉 NIVEAU {niveau} ! Gravité: {gravite_actuelle:.2f}")
+        return True
+    
+    return False
+    
 # --- BOUCLE PRINCIPALE ---
 while running:
 
@@ -597,13 +622,7 @@ while running:
                         and isinstance(score_geste, int)
                         and score_geste > 0
                     ):
-                        score += score_geste
-
-                        # Vérifie la montée de niveau tous les 10 points
-                        nouveau_niveau = (score // 10) + 1
-                        if nouveau_niveau > niveau:
-                            niveau = nouveau_niveau
-                            gravite_actuelle = min(0.4 + (niveau - 1) * 0.03, 1.0)
+                        mettre_a_jour_score_et_niveau(score_geste)
 
                 if event.type == pygame.KEYDOWN:
                     result = controller.handle_keyboard_inputs(
@@ -674,14 +693,7 @@ while running:
                         if combo >= 3:
                             points_gagnes += 1  # +1 bonus
                         
-                        score += points_gagnes
-                        
-                        # Vérifier montée de niveau tous les 10 points
-                        nouveau_niveau = (score // 10) + 1
-                        if nouveau_niveau > niveau:
-                            niveau = nouveau_niveau
-                            gravite_actuelle = min(0.4 + (niveau - 1) * 0.03, 1.0)
-                            print(f"🎉 NIVEAU {niveau} ! Gravité: {gravite_actuelle:.2f}")
+                        mettre_a_jour_score_et_niveau(points_gagnes)
 
     # 2. LOGIQUE ET DESSIN
 
@@ -812,6 +824,10 @@ while running:
                     txt_egalite,
                     (milieu_x - txt_egalite.get_width() // 2, y_titre + 150),
                 )
+                if nombre_de_joueurs == 2:
+                    duree_partie = (
+                        (pygame.time.get_ticks() - start_ticks) / 1000) - 3
+                    sauvegarder_score(0, 1, duree_partie, mode="2j", gagnant="Égalité")
             else:
                 quart_gauche = milieu_x // 2
                 quart_droite = milieu_x + milieu_x // 2
@@ -1007,14 +1023,7 @@ while running:
                         if combo >= 3:
                             points_gagnes += 1  # +1 bonus
                         
-                        score += points_gagnes
-                        
-                        # Vérifier montée de niveau tous les 10 points
-                        nouveau_niveau = (score // 10) + 1
-                        if nouveau_niveau > niveau:
-                            niveau = nouveau_niveau
-                            gravite_actuelle = min(0.4 + (niveau - 1) * 0.03, 1.0)
-                            print(f"🎉 NIVEAU {niveau} ! Gravité: {gravite_actuelle:.2f}")
+                        mettre_a_jour_score_et_niveau(points_gagnes)
 
             compteur += 1
 
@@ -1119,8 +1128,7 @@ while running:
                 # ============================================================
 
                 # On vérifie que ce n'est PAS un glaçon et PAS une bombe
-                est_un_fruit = not isinstance(f, Glacon) and not isinstance(f, Bombe)
-                est_un_fruit = est_un_fruit and f.type not in ["ice", "bombe"]
+                est_un_fruit = not isinstance(f, (Glacon, Bombe))
 
                 # On enlève une vie SEULEMENT si :
                 # 1. C'est un fruit (pas glaçon/bombe)
@@ -1194,8 +1202,7 @@ while running:
         for particule in particules_explosion[:]:
             particule.update()
             particule.draw(screen)
-            if particule.est_termine():
-                particules_explosion.remove(particule)
+            particles_explosion = [p for p in particules_explosion if not p.est_termine()]
         
         # Mise à jour et affichage des particules de glace
         for particule in particules_glace[:]:

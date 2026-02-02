@@ -129,12 +129,13 @@ def sauvegarder_score(score, niveau, duree_secondes=0, mode="1j", gagnant=None):
     """
 
     # Charge tout l'historique
-    creer_fichier_scores_si_absent
+    creer_fichier_scores_si_absent()
 
     try:
         with open(FICHIER_SCORES, "r", encoding="utf-8") as fichier:
             donnees = json.load(fichier)
-    except:
+    except (json.JSONDecodeError, FileNotFoundError, IOError) as e:
+        print(f"Erreur lecture scores: {e}")
         donnees = {"historique_1j": [], "historique_2j": []}
 
     # S'assure que les clés existent
@@ -319,14 +320,3 @@ def obtenir_historique_trie_par_score(mode="1j"):
     """
     historique = charger_scores(mode)
     return sorted(historique, key=lambda x: x["score"], reverse=True)
-
-
-# ============================================================================
-# FONCTIONS OBSOLÈTES (gardées pour compatibilité)
-# ============================================================================
-def est_dans_classement(score):
-    """
-    Fonction obsolète - Toutes les parties sont maintenant enregistrées.
-    Retourne toujours True pour compatibilité.
-    """
-    return True

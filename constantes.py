@@ -87,13 +87,3 @@ def load_assets():
     except pygame.error as e:
         print(f"✗ Erreur chargement image ice : {e}")
         images["ice"] = None
-
-
-# Configuration du jeu (pour le futur menu)
-CONFIG = {
-    "nb_joueurs": 1,  # 1 ou 2 joueurs
-    "difficulte": "normal",  # facile, normal, difficile
-    "duree_partie": 60,  # en secondes
-    "spawn_bombes": True,  # Activer/désactiver les bombes
-    "spawn_bonus": True,  # Activer/désactiver les bonus
-}
