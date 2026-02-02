@@ -316,6 +316,11 @@ nom_joueur = ""
 saisie_nom_active = False
 score_sauvegarde = False
 
+# Variables pour l'animation d'explosion
+explosion_en_cours = False
+explosion_timer = 0
+EXPLOSION_DUREE = 60  # Durée de l'animation en frames
+
 # ============================================================================
 # CRÉATION DES BOUTONS (couleurs harmonisées thème nature/fruits)
 # ============================================================================
@@ -584,6 +589,7 @@ while running:
                     score_geste = controller.end_slice(
                         mes_fruits, screen.get_width(), nombre_de_joueurs
                     )
+                    print(f"DEBUG: Score geste souris = {score_geste}, total avant = {score}")
 
                     # Ajoute le score au total (mode 1 joueur uniquement)
                     if (
@@ -609,40 +615,73 @@ while running:
                         morceaux_fruits
                     )
                     if result == "game_over":
+                        son_bomb.play() 
+                        
+                        # Créer les particules d'explosion (position clavier = centre zone J1)
+                        mx = screen.get_width() // 4  # Centre de la zone J1
+                        my = screen.get_height() // 2
+                        for _ in range(50):
+                            particules_explosion.append(ParticuleExplosion(mx, my))
+                        
+                        explosion_en_cours = True
+                        explosion_timer = EXPLOSION_DUREE
+                        is_bomb_exploded = True
                         if nombre_de_joueurs == 1:
                             duree_partie = (
                                 (pygame.time.get_ticks() - start_ticks) / 1000
                             ) - 3
                             sauvegarder_score(score, niveau, duree_partie)
-                        etat_jeu = "game_over"
-                        is_bomb_exploded = True
                         print("BOOM ! Bombe tranchée au clavier !")
+                        
                     elif result == "freeze":
+                        son_freeze.play()
+                        # Particule de glace
+                        mx, my = pygame.mouse.get_pos()
+                        for _ in range(30):
+                            particules_glace.append(ParticuleGlace(mx, my))
                         # Mode 1 joueur
                         if not freeze_actif and not freeze_en_attente:
                             freeze_en_attente = True
                             freeze_delai_timer = FREEZE_DELAI_FRAMES
 
                     elif result == "freeze_j1":
+                        son_freeze.play()
+                        mx, my = pygame.mouse.get_pos()
+                        for _ in range(30):
+                            particules_glace.append(ParticuleGlace(mx, my))
                         # Freeze pour joueur 1 seulement
                         if not freeze_j1_actif and not freeze_j1_en_attente:
                             freeze_j1_en_attente = True
                             freeze_j1_delai_timer = FREEZE_DELAI_FRAMES
 
                     elif result == "freeze_j2":
+                        son_freeze.play()
+                        mx, my = pygame.mouse.get_pos()
+                        for _ in range(30):
+                            particules_glace.append(ParticuleGlace(mx, my))
                         # Freeze pour joueur 2 seulement
                         if not freeze_j2_actif and not freeze_j2_en_attente:
                             freeze_j2_en_attente = True
                             freeze_j2_delai_timer = FREEZE_DELAI_FRAMES
                     elif isinstance(result, int) and result > 0:
                         son_sliced.play()
-                        # Score du clavier (mode 1 joueur)
-                        if nombre_de_joueurs == 1:
-                            score += result
-                            nouveau_niveau = (score // 10) + 1
-                            if nouveau_niveau > niveau:
-                                niveau = nouveau_niveau
-                                gravite_actuelle = min(0.4 + (niveau - 1) * 0.03, 1.0)
+                    # Score en temps réel (mode 1 joueur)
+                    if nombre_de_joueurs == 1:
+                        # +1 point de base par fruit
+                        points_gagnes = 1
+                        # Bonus si combo >= 3
+                        combo = controller.get_combo_actuel()
+                        if combo >= 3:
+                            points_gagnes += 1  # +1 bonus
+                        
+                        score += points_gagnes
+                        
+                        # Vérifier montée de niveau tous les 10 points
+                        nouveau_niveau = (score // 10) + 1
+                        if nouveau_niveau > niveau:
+                            niveau = nouveau_niveau
+                            gravite_actuelle = min(0.4 + (niveau - 1) * 0.03, 1.0)
+                            print(f"🎉 NIVEAU {niveau} ! Gravité: {gravite_actuelle:.2f}")
 
     # 2. LOGIQUE ET DESSIN
 
@@ -887,8 +926,19 @@ while running:
                     if freeze_j2_timer <= 0:
                         freeze_j2_actif = False
                         print("Freeze J2 termine.")
+                        
+            # ====================================================================
+            # GESTION DU DÉLAI D'EXPLOSION
+            # ====================================================================
+            if explosion_en_cours:
+                explosion_timer -= 1
+                if explosion_timer <= 0:
+                    explosion_en_cours = False
+                    son_win.play()  # Jouer le son de fin
+                    etat_jeu = "game_over"
+            
             # Gestion de la souris
-            if controller.slicing:
+            elif controller.slicing:
                 result = controller.update_slice(
                     pygame.mouse.get_pos(),
                     mes_fruits,
@@ -906,14 +956,16 @@ while running:
                     mx, my = pygame.mouse.get_pos()
                     for _ in range(50):  # 50 particules
                         particules_explosion.append(ParticuleExplosion(mx, my))
+                        
+                    explosion_en_cours = True
+                    explosion_timer = EXPLOSION_DUREE
+                    is_bomb_exploded = True
                     if nombre_de_joueurs == 1:
                         duree_partie = (
                             (pygame.time.get_ticks() - start_ticks) / 1000
                         ) - 3
                         sauvegarder_score(score, niveau, duree_partie)
                     # La bombe a été tranchée : partie terminée
-                    etat_jeu = "game_over"
-                    is_bomb_exploded = True
                     print("BOOM ! Bombe tranchée !")
 
                 elif result == "freeze":
@@ -946,6 +998,23 @@ while running:
 
                 elif isinstance(result, int) and result > 0:
                     son_sliced.play()
+                    # Score en temps réel (mode 1 joueur)
+                    if nombre_de_joueurs == 1:
+                        # +1 point de base par fruit
+                        points_gagnes = 1
+                        # Bonus si combo >= 3
+                        combo = controller.get_combo_actuel()
+                        if combo >= 3:
+                            points_gagnes += 1  # +1 bonus
+                        
+                        score += points_gagnes
+                        
+                        # Vérifier montée de niveau tous les 10 points
+                        nouveau_niveau = (score // 10) + 1
+                        if nouveau_niveau > niveau:
+                            niveau = nouveau_niveau
+                            gravite_actuelle = min(0.4 + (niveau - 1) * 0.03, 1.0)
+                            print(f"🎉 NIVEAU {niveau} ! Gravité: {gravite_actuelle:.2f}")
 
             compteur += 1
 
@@ -958,7 +1027,7 @@ while running:
             else:
                 min_freq = 30  # Valeurs par défaut pour mode 2 joueurs
                 max_freq = 100
-            if compteur >= frequence_lancer:
+            if compteur >= frequence_lancer and not explosion_en_cours:
                 # Gestion de la zone (2 joueurs ou non)
                 if nombre_de_joueurs == 2:
                     zone_joueur = random.choice([1, 2])
@@ -1063,6 +1132,7 @@ while running:
                         vies_j1 -= 1
                         print(f"Fruit raté ! Vies restantes : {vies_j1}")
                         if vies_j1 <= 0:
+                            son_win.play()
                             duree_partie = (
                                 (pygame.time.get_ticks() - start_ticks) / 1000
                             ) - 3
@@ -1115,6 +1185,24 @@ while running:
         # Affichage de chaque morceau
         for morceau in morceaux_fruits:
             morceau.draw(screen)
+            
+        # ====================================================================
+        # GESTION DES PARTICULES D'EXPLOSION ET DE GLACE
+        # ====================================================================
+        
+        # Mise à jour et affichage des particules d'explosion
+        for particule in particules_explosion[:]:
+            particule.update()
+            particule.draw(screen)
+            if particule.est_termine():
+                particules_explosion.remove(particule)
+        
+        # Mise à jour et affichage des particules de glace
+        for particule in particules_glace[:]:
+            particule.update()
+            particule.draw(screen)
+            if particule.est_termine():
+                particules_glace.remove(particule)
 
         if not en_attente:
             controller.draw_slice(screen)

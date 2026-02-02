@@ -656,7 +656,7 @@ class ParticuleExplosion:
         if self.alpha > 0:
             s = pygame.Surface((int(self.taille * 2), int(self.taille * 2)), pygame.SRCALPHA)
             pygame.draw.circle(s, (*self.couleur, self.alpha), 
-                             (int(self.taille), int(self.taille)), int(self.taille))
+            (int(self.taille), int(self.taille)), int(self.taille))
             surface.blit(s, (int(self.x - self.taille), int(self.y - self.taille)))
     
     def est_termine(self):

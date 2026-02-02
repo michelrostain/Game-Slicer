@@ -85,6 +85,96 @@
             "niveau": 1,
             "date": "2026-02-02 00:07:11",
             "duree_secondes": 36.644
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-02 00:09:00",
+            "duree_secondes": 8.328
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-02 00:19:18",
+            "duree_secondes": 4.117
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-02 00:19:33",
+            "duree_secondes": 8.467
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-02 00:19:41",
+            "duree_secondes": 2.0250000000000004
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-02 00:20:21",
+            "duree_secondes": 35.215
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-02 00:23:40",
+            "duree_secondes": 47.05
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-02 00:41:25",
+            "duree_secondes": 18.699
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-02 00:41:54",
+            "duree_secondes": 48.273
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-02 00:42:07",
+            "duree_secondes": 61.035
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-02 00:43:20",
+            "duree_secondes": 2.5060000000000002
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-02 00:43:36",
+            "duree_secondes": 17.759
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-02 00:55:25",
+            "duree_secondes": 12.316
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-02 00:56:26",
+            "duree_secondes": 4.024
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-02 00:58:31",
+            "duree_secondes": 117.484
+        },
+        {
+            "score": 12,
+            "niveau": 2,
+            "date": "2026-02-02 01:08:52",
+            "duree_secondes": 24.714
         }
     ],
     "historique_2j": [
@@ -163,6 +253,27 @@
             "niveau": 1,
             "date": "2026-02-02 00:07:23",
             "duree_secondes": 4.923,
+            "gagnant": "J2"
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-02 00:24:57",
+            "duree_secondes": 10.94,
+            "gagnant": "J2"
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-02 00:42:52",
+            "duree_secondes": 9.216,
+            "gagnant": "J2"
+        },
+        {
+            "score": 0,
+            "niveau": 1,
+            "date": "2026-02-02 00:55:37",
+            "duree_secondes": 4.442,
             "gagnant": "J2"
         }
     ]
