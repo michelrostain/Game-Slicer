@@ -236,7 +236,6 @@ def end_slice(mes_fruits, screen_width=None, nombre_de_joueurs=1):
         print(f"✓ {combo_actuel} fruit(s) tranché(s) = {score_geste} point(s)")
 
     # Réinitialise le compteur pour le prochain geste
-    fruits_tranches = combo_actuel  # Sauvegarde pour le retour
     combo_actuel = 0
 
     return score_geste

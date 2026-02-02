@@ -1,6 +1,10 @@
 import pygame
-import json
-
+from datetime import datetime
+from scores import (
+        charger_scores,
+        obtenir_statistiques,
+        obtenir_historique_trie_par_score,
+    )
 
 class Bouton:
     def __init__(self, x, y, largeur, hauteur, texte, couleur_base, couleur_survol):
@@ -108,11 +112,6 @@ def dessiner_scores(screen):
     """
     Affiche l'historique des parties en 2 colonnes (1J et 2J).
     """
-    from scores import (
-        charger_scores,
-        obtenir_statistiques,
-        obtenir_historique_trie_par_score,
-    )
 
     # Fond
     screen.fill((45, 45, 60))
@@ -209,11 +208,9 @@ def dessiner_scores(screen):
         date_str = partie.get("date", "")
         if date_str:
             try:
-                from datetime import datetime
-
                 dt = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
                 date_affichee = dt.strftime("%d/%m %H:%M")
-            except:
+            except ValueError:
                 date_affichee = date_str[:10]
         else:
             date_affichee = "-"
@@ -286,8 +283,6 @@ def dessiner_scores(screen):
         date_str = partie.get("date", "")
         if date_str:
             try:
-                from datetime import datetime
-
                 dt = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
                 date_affichee = dt.strftime("%d/%m %H:%M")
             except:
